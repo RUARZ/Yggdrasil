@@ -12,12 +12,12 @@ namespace Yggdrasil.Wpf.Linker
     {
         #region Interface Implementation
 
-        public void Link(object control, object context, Dictionary<string, MemberInfo> linkDefinitions, Action<object, object, string> createLinkAction)
+        public void Link(object control, object context, Dictionary<string, string> linkDefinitions, Dictionary<string, MemberInfo> foundLinks, Action<object, object, string> createLinkAction)
         {
             if (!(control is Label label))
                 return;
 
-            foreach(KeyValuePair<string, MemberInfo> definition in linkDefinitions)
+            foreach(KeyValuePair<string, MemberInfo> definition in foundLinks)
             {
                 switch (definition.Key)
                 {

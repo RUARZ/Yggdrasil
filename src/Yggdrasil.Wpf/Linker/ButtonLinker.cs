@@ -23,7 +23,7 @@ namespace Yggdrasil.Wpf.Linker
 
         #region Interface Implementation
 
-        public void Link(object control, object context, Dictionary<string, MemberInfo> linkDefinitions, Action<object, object, string> createLinkAction)
+        public void Link(object control, object context, Dictionary<string, string> linkDefinitions, Dictionary<string, MemberInfo> foundLinks, Action<object, object, string> createLinkAction)
         {
             if (!(control is Button button))
                 return;
@@ -32,14 +32,12 @@ namespace Yggdrasil.Wpf.Linker
             _context = context;
             bool commandBindingCreated = false;
 
-            foreach(KeyValuePair<string, MemberInfo> definition in linkDefinitions)
+            foreach(KeyValuePair<string, MemberInfo> definition in foundLinks)
             {
-                commandBindingCreated = CreateCommandBindingIfPossible(_button, definition.Value, _context);
-
                 switch (definition.Key)
                 {
                     case nameof(Button.IsEnabled):
-                        if (commandBindingCreated || !(definition.Value is PropertyInfo propInfo))
+                        if (!(definition.Value is PropertyInfo propInfo))
                             continue;
 
                         if (propInfo.PropertyType != typeof(bool))
@@ -55,11 +53,19 @@ namespace Yggdrasil.Wpf.Linker
                         }
                         break;
                     case nameof(Button.Click):
-                        if (commandBindingCreated || !(definition.Value is MethodInfo methodInfo))
+                        if (!(definition.Value is MethodInfo methodInfo))
                             continue;
 
                         _clickViewModelMethodInfo = methodInfo;
                         _button.Click += Button_Click;
+                        break;
+                    case nameof(Button.Command):
+                        if (!(definition.Value is PropertyInfo pInfo) || !typeof(ICommand).IsAssignableFrom(pInfo.PropertyType))
+                            continue;
+
+                        Binding binding = new Binding(definition.Value.Name);
+                        binding.Source = context;
+                        BindingOperations.SetBinding(button, System.Windows.Controls.Primitives.ButtonBase.CommandProperty, binding);
                         break;
                     default:
                         throw new NotSupportedException($"The link for '{definition.Key}' is not supported by '{GetType().Name}'!");
@@ -73,22 +79,6 @@ namespace Yggdrasil.Wpf.Linker
                 _propertyNotifyChangedContext.PropertyChanged -= PropertyChangedModel_PropertyChanged;
 
             _button.Click -= Button_Click;
-        }
-
-        #endregion
-
-        #region Private Methods
-
-        private bool CreateCommandBindingIfPossible(Button button, MemberInfo memberInfo, object context)
-        {
-            if (!(memberInfo is PropertyInfo propInfo) || !typeof(ICommand).IsAssignableFrom(propInfo.PropertyType))
-                return false;
-
-            Binding binding = new Binding(memberInfo.Name);
-            binding.Source = context;
-            BindingOperations.SetBinding(button, System.Windows.Controls.Primitives.ButtonBase.CommandProperty, binding);
-
-            return true;
         }
 
         #endregion

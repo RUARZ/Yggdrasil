@@ -75,6 +75,9 @@ namespace Yggdrasil
         /// <returns>The link info name for the passed <paramref name="controlName"/>.</returns>
         public string GetLinkInfoName(string controlName)
         {
+            if (string.IsNullOrEmpty(controlName))
+                return null;
+
             if (_controlNameRegex == null)
                 return _resultInfoNameDefinition.Replace(NAME_PLACEHOLDER_NAME, controlName);
 

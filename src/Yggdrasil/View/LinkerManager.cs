@@ -39,16 +39,28 @@ namespace Yggdrasil
                     if (att == null)
                         continue;
 
-                    if (att.ControlType == controlType)
+                    if (_linker.ContainsKey(att.ControlType))
+                        continue;
+
+                    if (att.ControlType == controlType || att.ControlType.IsAssignableFrom(controlType))
                     {
                         linker = Activator.CreateInstance(type) as ILinker;
-                        _linker.Add(controlType, type);
-                        return linker;
+                        _linker.Add(att.ControlType, type);
+
+                        // if the type is exact the searched type then return it
+                        // if the type does not match exactly then continue the search for a exact match.
+                        if (att.ControlType == controlType)
+                            return linker;
                     }
                 }
             }
 
-            return null;
+            Type linkerType = _linker.FirstOrDefault(x => x.Key.IsAssignableFrom(controlType)).Value;
+
+            if (linkerType == null)
+                return null;
+
+            return Activator.CreateInstance(linkerType) as ILinker;
         }
 
         #endregion

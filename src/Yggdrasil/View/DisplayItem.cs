@@ -163,27 +163,31 @@ namespace Yggdrasil
         {
             Type contextType = context.GetType();
 
-            Dictionary<string, MemberInfo> linkDefinitions = new Dictionary<string, MemberInfo>();
+            Dictionary<string, MemberInfo> foundLinks = new Dictionary<string, MemberInfo>();
+            Dictionary<string, string> linkDefinitions = new Dictionary<string, string>();
 
             foreach (LinkRule rule in linkRules)
             {
+                MemberInfo info = null;
+                string linkInfoName = rule.GetLinkInfoName(controlName);
+
                 switch (rule.RuleType)
                 {
                     case LinkRuleType.Property:
-                        PropertyInfo contextPropertyInfo = !string.IsNullOrEmpty(controlName) ? contextType.GetProperty(rule.GetLinkInfoName(controlName)) : null;
-
-                        linkDefinitions.Add(rule.InfoName, contextPropertyInfo);
+                        info = !string.IsNullOrEmpty(linkInfoName) ? contextType.GetProperty(linkInfoName) : null;
                         break;
                     case LinkRuleType.Event:
-                        MethodInfo contextMethodInfo = contextType.GetMethod(rule.GetLinkInfoName(controlName));
-
-                        linkDefinitions.Add(rule.InfoName, contextMethodInfo);
+                        info = contextType.GetMethod(linkInfoName);
                         break;
                 }
+
+                linkDefinitions.Add(rule.InfoName, linkInfoName);
+                if (info != null)
+                    foundLinks.Add(rule.InfoName, info);
             }
 
             _linkers.Add(linker);
-            linker.Link(control, context, linkDefinitions, CreateLink);
+            linker.Link(control, context, linkDefinitions, foundLinks, CreateLink);
         }
 
         private void AddResourceFields(FieldInfo viewFieldInfo)
