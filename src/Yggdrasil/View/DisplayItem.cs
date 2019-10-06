@@ -161,7 +161,7 @@ namespace Yggdrasil
 
         private void Link(object control, object context, IEnumerable<LinkRule> linkRules, ILinker linker, string controlName)
         {
-            Type contextType = context.GetType();
+            Type contextType = context?.GetType();
 
             Dictionary<string, MemberInfo> foundLinks = new Dictionary<string, MemberInfo>();
             Dictionary<string, string> linkDefinitions = new Dictionary<string, string>();
@@ -174,10 +174,10 @@ namespace Yggdrasil
                 switch (rule.RuleType)
                 {
                     case LinkRuleType.Property:
-                        info = !string.IsNullOrEmpty(linkInfoName) ? contextType.GetProperty(linkInfoName) : null;
+                        info = !string.IsNullOrEmpty(linkInfoName) ? contextType?.GetProperty(linkInfoName) : null;
                         break;
                     case LinkRuleType.Event:
-                        info = contextType.GetMethod(linkInfoName);
+                        info = contextType?.GetMethod(linkInfoName);
                         break;
                 }
 

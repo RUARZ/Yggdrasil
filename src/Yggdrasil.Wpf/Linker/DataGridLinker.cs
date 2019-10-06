@@ -11,12 +11,6 @@ namespace Yggdrasil.Wpf.Linker
     [RegisterLinker(typeof(DataGrid))]
     public class DataGridLinker : ILinker
     {
-        #region Private Fields
-
-        private ItemsControlLinkHelper _linkHelper;
-
-        #endregion
-
         #region Interface Implementation
 
         public void Link(object control, object context, Dictionary<string, string> linkDefinitions, Dictionary<string, MemberInfo> foundLinks, Action<object, object, string> createLinkAction)
@@ -33,8 +27,6 @@ namespace Yggdrasil.Wpf.Linker
                             throw new NotSupportedException($"The member info for the '{nameof(DataGrid.ItemsSource)}' link is not of type '{typeof(PropertyInfo)}' or the property is not of type '{typeof(IEnumerable)}'!");
 
                         CreateBinding(dataGrid, DataGrid.ItemsSourceProperty, itemsSourcePInfo.Name, context, BindingMode.OneWay);
-
-                        _linkHelper = new ItemsControlLinkHelper(dataGrid, createLinkAction);
                         break;
                     case nameof(DataGrid.SelectedItem):
                         if (!(definition.Value is PropertyInfo selectedItemPInfo) || typeof(IEnumerable).IsAssignableFrom(selectedItemPInfo.PropertyType))
@@ -61,10 +53,7 @@ namespace Yggdrasil.Wpf.Linker
 
         public void Unlink()
         {
-            if (_linkHelper == null)
-                return;
-
-            _linkHelper.Dispose();
+            
         }
 
         #endregion

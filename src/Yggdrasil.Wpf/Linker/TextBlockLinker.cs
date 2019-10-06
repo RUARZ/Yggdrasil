@@ -25,17 +25,17 @@ namespace Yggdrasil.Wpf.Linker
             if (!(control is TextBlock textBlock))
                 return;
 
-            foreach (KeyValuePair<string, MemberInfo> definition in foundLinks)
+            foreach (KeyValuePair<string, MemberInfo> link in foundLinks)
             {
-                switch (definition.Key)
+                switch (link.Key)
                 {
                     case nameof(TextBlock.Text):
-                        Binding binding = new Binding(definition.Value.Name);
+                        Binding binding = new Binding(link.Value.Name);
                         binding.Source = context;
                         BindingOperations.SetBinding(textBlock, TextBlock.TextProperty, binding);
                         break;
                     default:
-                        throw new NotSupportedException($"Property '{definition.Key}' is not supported by {GetType().Name}!");
+                        throw new NotSupportedException($"Property '{link.Key}' is not supported by {GetType().Name}!");
                 }
             }
         }
