@@ -51,9 +51,11 @@
     <Compile Include="Linker\ButtonLinker.cs" />
     <Compile Include="Linker\DataGridBoundColumnLinker.cs" />
     <Compile Include="Linker\DataGridLinker.cs" />
+    <Compile Include="Linker\GridViewColumnLinker.cs" />
     <Compile Include="Linker\ItemsControlLinker.cs" />
     <Compile Include="Linker\ItemsControlLinkHelper.cs" />
     <Compile Include="Linker\LabelLinker.cs" />
+    <Compile Include="Linker\ListViewLinker.cs" />
     <Compile Include="Linker\TextBlockLinker.cs" />
     <Compile Include="Message\IWpfMessageHandler.cs" />
     <Compile Include="Message\MessageEnums.cs" />
