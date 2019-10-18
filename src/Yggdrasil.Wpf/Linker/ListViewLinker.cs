@@ -33,6 +33,10 @@ namespace Yggdrasil.Wpf.Linker
 
                         if (listView.View is GridView view)
                         {
+                            //get the window to which the list view belongs to retrieve the information of the columns (to get the name)
+                            //because gridviewcolumn is no framework element therefore retrieving the name of a column with .GetValue() does not work
+                            //the x:Name creates fields with the columns and the specified name in the window. Therefore the window is needed to 
+                            //to get the name of the columns with reflection.
                             Window window = Window.GetWindow(listView);
 
                             foreach (GridViewColumn col in view.Columns)
@@ -69,11 +73,11 @@ namespace Yggdrasil.Wpf.Linker
             return binding;
         }
 
-        private string GetColumnName(GridViewColumn column, object context)
+        private string GetColumnName(GridViewColumn column, Window window)
         {
-            foreach (FieldInfo fieldInfo in context.GetType().GetFields(BindingFlags.Instance | BindingFlags.NonPublic))
+            foreach (FieldInfo fieldInfo in window.GetType().GetFields(BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Public))
             {
-                object value = fieldInfo.GetValue(context);
+                object value = fieldInfo.GetValue(window);
                 if (!typeof(GridViewColumn).IsAssignableFrom(value?.GetType()))
                     continue;
 

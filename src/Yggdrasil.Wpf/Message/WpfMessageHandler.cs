@@ -103,6 +103,11 @@ namespace Yggdrasil.Wpf
             ShowMessage(owner, title, message, MessageOptions.Ok, MessageImage.Error);
         }
 
+        public void DisplayError(object owner, string title, string message)
+        {
+            ShowError(owner, title, message);
+        }
+
         #endregion
 
         #region Show Information
