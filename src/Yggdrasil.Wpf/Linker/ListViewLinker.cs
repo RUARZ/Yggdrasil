@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Reflection;
 using System.Windows;
 using System.Windows.Controls;
@@ -32,9 +33,11 @@ namespace Yggdrasil.Wpf.Linker
 
                         if (listView.View is GridView view)
                         {
+                            Window window = Window.GetWindow(listView);
+
                             foreach (GridViewColumn col in view.Columns)
                             {
-                                createLinkAction(col, context, col.GetValue(FrameworkElement.NameProperty).ToString());
+                                createLinkAction(col, context, GetColumnName(col, window));
                             }
                         }
                         break;
@@ -64,6 +67,21 @@ namespace Yggdrasil.Wpf.Linker
                 binding.Source = context;
 
             return binding;
+        }
+
+        private string GetColumnName(GridViewColumn column, object context)
+        {
+            foreach (FieldInfo fieldInfo in context.GetType().GetFields(BindingFlags.Instance | BindingFlags.NonPublic))
+            {
+                object value = fieldInfo.GetValue(context);
+                if (!typeof(GridViewColumn).IsAssignableFrom(value?.GetType()))
+                    continue;
+
+                if (ReferenceEquals(value, column))
+                    return fieldInfo.Name;
+            }
+
+            return null;
         }
 
         #endregion

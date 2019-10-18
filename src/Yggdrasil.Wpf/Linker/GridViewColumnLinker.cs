@@ -22,7 +22,6 @@ namespace Yggdrasil.Wpf.Linker
                 {
                     case nameof(GridViewColumn.DisplayMemberBinding):
                         Binding binding = new Binding(definition.Value);
-                        binding.Source = context;
                         gridViewColumn.DisplayMemberBinding = binding;
                         break;
                     default:
