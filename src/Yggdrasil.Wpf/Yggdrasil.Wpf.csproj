@@ -57,6 +57,7 @@
     <Compile Include="Linker\LabelLinker.cs" />
     <Compile Include="Linker\ListViewLinker.cs" />
     <Compile Include="Linker\TextBlockLinker.cs" />
+    <Compile Include="Linker\UserControlLinker.cs" />
     <Compile Include="Message\IWpfMessageHandler.cs" />
     <Compile Include="Message\MessageEnums.cs" />
     <Compile Include="Message\WpfMessageHandler.cs" />
@@ -73,6 +74,7 @@
       <DependentUpon>Settings.settings</DependentUpon>
       <DesignTimeSharedInput>True</DesignTimeSharedInput>
     </Compile>
+    <Compile Include="ViewHandler\WpfViewHandler.cs" />
     <Compile Include="ViewModel\ViewModel.cs" />
     <EmbeddedResource Include="Properties\Resources.resx">
       <Generator>ResXFileCodeGenerator</Generator>

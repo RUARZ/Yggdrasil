@@ -75,10 +75,7 @@ namespace Yggdrasil.Transposer
         /// <returns>The context of the passed <paramref name="view"/>.</returns>
         private static object GetContextFromView(object view)
         {
-            if (view is IView v)
-                return v.Context;
-
-            return ViewManager.GetViewTypeInfo(view.GetType()).ContextPropertyInfo.GetValue(view);
+            return ViewManager.GetContextOfView(view);
         }
 
         /// <summary>

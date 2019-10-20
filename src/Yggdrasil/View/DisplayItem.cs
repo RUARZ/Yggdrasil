@@ -33,7 +33,6 @@ namespace Yggdrasil
         {
             View = view;
             ViewModel = viewModel;
-            RegisterToBuriedEvent(view);
             SetFieldActions();
         }
 
@@ -73,30 +72,6 @@ namespace Yggdrasil
         #endregion
 
         #region Private Methods
-
-        /// <summary>
-        /// Registers to the buried event of <paramref name="view"/> and calls the bury method of <see cref="ViewManager"/> to bury the view and call dispose
-        /// methods.
-        /// </summary>
-        /// <param name="view">The instance of the view to register the event.</param>
-        private void RegisterToBuriedEvent(object view)
-        {
-            EventInfo buriedEventInfo = ViewManager.GetViewTypeInfo(view.GetType()).BuriedEventInfo;
-
-            string name = buriedEventInfo.Name;
-
-            var parameters = buriedEventInfo.EventHandlerType.GetMethod("Invoke").GetParameters()
-                .Select((p, i) => Expression.Parameter(p.ParameterType, "p" + i)).ToArray();
-
-            var lambda = Expression.Lambda(buriedEventInfo.EventHandlerType,
-                Expression.Call(typeof(ViewManager).GetMethod(nameof(ViewManager.BuryModel),
-                    BindingFlags.Public | BindingFlags.Static,
-                    null,
-                    new[] { typeof(object) },
-                    null), Expression.Constant(ViewModel)), parameters);
-
-            buriedEventInfo.AddEventHandler(view, lambda.Compile());
-        }
 
         private void SetFieldActions()
         {

@@ -63,7 +63,7 @@ namespace Yggdrasil.Message
         {
             if (!string.IsNullOrEmpty(_messageDefinition) || !string.IsNullOrEmpty(_messageTitleDefinition) ||
                 _viewNameRegex != null || _exceptionNameRegex != null)
-                throw new Exception();//todo create a exception
+                throw new ErrorMessageRuleDefinedException("The definition of a error message was already set!");
 
             _viewNameRegex = CreateNameRegex(viewNameDefinition);
             _exceptionNameRegex = CreateNameRegex(exceptionNameDefinition);

@@ -1,7 +1,7 @@
 ﻿using System.ComponentModel;
 using Yggdrasil.ViewModel;
 
-namespace Yggdrasil.Wpf.ViewModel
+namespace Yggdrasil.Wpf
 {
     /// <summary>
     /// Base view model.

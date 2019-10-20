@@ -54,11 +54,11 @@ namespace Yggdrasil
         /// </summary>
         /// <param name="type">The origin type to create the result type name based on the rule.</param>
         /// <returns>The result type name based on the rule.</returns>
-        /// <exception cref="Exception">Thrown if the full name of the <paramref name="type"/> does not match the type name definition for origin.</exception>
+        /// <exception cref="ArgumentException">Thrown if the full name of the <paramref name="type"/> does not match the type name definition for origin.</exception>
         public string GetResultTypeName(Type type)
         {
             if (!_originTypeNameRegex.IsMatch(type.FullName))
-                throw new Exception("Type name not valid!");//TODO: new exception and better message!
+                throw new ArgumentException($"The type name of '{type}' does not match the defined rule!");
 
             Match match = _originTypeNameRegex.Match(type.FullName);
 

@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using Yggdrasil.Exceptions;
 using Yggdrasil.Transposer;
 using Yggdrasil.ViewModel;
 
@@ -12,9 +13,9 @@ namespace Yggdrasil
     public static class ViewManager
     {
         #region Private Fields
-
-        private static readonly List<ViewTypeInfo> _viewTypeInfos = new List<ViewTypeInfo>();
+        
         private static IViewLocator _viewLocator;
+        private static IViewHandler _viewHandler;
         private static readonly List<DisplayItem> _activeItems = new List<DisplayItem>();
         private static DisplayItem _rootItem;
 
@@ -29,7 +30,7 @@ namespace Yggdrasil
         /// <exception cref="Exception"></exception>
         public static void DisplayModel(object model)
         {
-            _activeItems.Add(CreateItem(model));
+            _activeItems.Add(CreateAndDisplayItem(model));
         }
 
         /// <summary>
@@ -37,9 +38,19 @@ namespace Yggdrasil
         /// </summary>
         /// <typeparam name="T">The type of the model which should be displayed.</typeparam>
         /// <exception cref="Exception"></exception>
-        public static void DisplayModel<T>()
+        public static void DisplayModel<T>() where T : new()
         {
             DisplayModel(Activator.CreateInstance(typeof(T)));
+        }
+
+        /// <summary>
+        /// Displays the model with the passed <paramref name="type"/>.
+        /// </summary>
+        /// <param name="type">The <see cref="Type"/> of the model which should be displayed.</param>
+        /// <exception cref="Exception"></exception>
+        public static void DisplayModel(Type type)
+        {
+            DisplayModel(Activator.CreateInstance(type));
         }
 
         /// <summary>
@@ -51,6 +62,74 @@ namespace Yggdrasil
         public static void DisplayModel<T>(params object[] constructorParameters)
         {
             DisplayModel(Activator.CreateInstance(typeof(T), constructorParameters));
+        }
+
+        /// <summary>
+        /// Displays the model with the passed <paramref name="type"/>.
+        /// </summary>
+        /// <param name="type">The <see cref="Type"/> of the model which should be displayed.</param>
+        /// <param name="constructorParameters">Parameters for creating a instance of the type <typeparamref name="T"/>.</param>
+        /// <exception cref="Exception"></exception>
+        public static void DisplayModel(Type type, params object[] constructorParameters)
+        {
+            DisplayModel(Activator.CreateInstance(type, constructorParameters));
+        }
+
+        /// <summary>
+        /// Displays the passed <paramref name="model"/>.
+        /// </summary>
+        /// <param name="model">The model which should be displayed.</param>
+        /// <param name="owner">The owner view model for the display modal.</param>
+        /// <exception cref="Exception"></exception>
+        public static void DisplayModalModel(object owner, object model)
+        {
+            CreateAndDisplayModalItem(owner, model);
+        }
+        
+        /// <summary>
+        /// Displays the model with the type <typeparamref name="T"/>.
+        /// </summary>
+        /// <param name="owner">The owner view model for the display modal.</param>
+        /// <typeparam name="T">The type of the model which should be displayed.</typeparam>
+        /// <exception cref="Exception"></exception>
+        public static void DisplayModalModel<T>(object owner) where T : new()
+        {
+            DisplayModalModel(owner, Activator.CreateInstance(typeof(T)));
+        }
+
+        /// <summary>
+        /// Displays the model with the passed <paramref name="type"/>.
+        /// </summary>
+        /// <param name="owner">The owner view model for the display modal.</param>
+        /// <param name="type">The <see cref="Type"/> of the model which should be displayed.</param>
+        /// <exception cref="Exception"></exception>
+        public static void DisplayModalModel(object owner, Type type)
+        {
+            DisplayModalModel(owner, Activator.CreateInstance(type));
+        }
+
+        /// <summary>
+        /// Displays the model with the type <typeparamref name="T"/>.
+        /// </summary>
+        /// <param name="owner">The owner view model for the display modal.</param>
+        /// <typeparam name="T">The type of the model which should be displayed.</typeparam>
+        /// <param name="constructorParameters">Parameters for creating a instance of the type <typeparamref name="T"/>.</param>
+        /// <exception cref="Exception"></exception>
+        public static void DisplayModalModel<T>(object owner, params object[] constructorParameters)
+        {
+            DisplayModalModel(owner, Activator.CreateInstance(typeof(T), constructorParameters));
+        }
+
+        /// <summary>
+        /// Displays the model with the passed <paramref name="type"/>.
+        /// </summary>
+        /// <param name="owner">The owner view model for the display modal.</param>
+        /// <param name="type">The <see cref="Type"/> of the model which should be displayed.</param>
+        /// <param name="constructorParameters">Parameters for creating a instance of the type <typeparamref name="T"/>.</param>
+        /// <exception cref="Exception"></exception>
+        public static void DisplayModalModel(object owner, Type type, params object[] constructorParameters)
+        {
+            DisplayModalModel(owner, Activator.CreateInstance(type, constructorParameters));
         }
 
         /// <summary>
@@ -68,7 +147,7 @@ namespace Yggdrasil
             if (_activeItems.Count > 0)
                 throw new RootModelNoLongerAllowedException("Displaying of a root model is no longer allowed because there are already other models displayed!");
 
-            _rootItem = CreateItem(model);
+            _rootItem = CreateAndDisplayItem(model);
         }
 
         /// <summary>
@@ -78,9 +157,19 @@ namespace Yggdrasil
         /// <exception cref="RootModelAlreadyDisplayedException">Thrown if there is already a registered root model.</exception>
         /// <exception cref="RootModelNoLongerAllowedException">Thrown if there are already other models displayed and therefore no rootmodel can be set anymore.</exception>
         /// <exception cref="Exception"></exception>
-        public static void DisplayRootModel<T>()
+        public static void DisplayRootModel<T>() where T : new()
         {
             DisplayRootModel(Activator.CreateInstance(typeof(T)));
+        }
+
+        /// <summary>
+        /// Displays the model with the passed <paramref name="type"/> and set it as root model.
+        /// </summary>
+        /// <param name="type">The <see cref="Type"/> of the model which should be displayed.</param>
+        /// <exception cref="Exception"></exception>
+        public static void DisplayRootModel(Type type)
+        {
+            DisplayRootModel(Activator.CreateInstance(type));
         }
 
         /// <summary>
@@ -94,6 +183,17 @@ namespace Yggdrasil
         public static void DisplayRootModel<T>(params object[] constructorParameters)
         {
             DisplayRootModel(Activator.CreateInstance(typeof(T), constructorParameters));
+        }
+
+        /// <summary>
+        /// Displays the model with the passed <paramref name="type"/> and set it as root model.
+        /// </summary>
+        /// <param name="type">The <see cref="Type"/> of the model which should be displayed.</param>
+        /// <param name="constructorParameters">Parameters for creating a instance of the type <typeparamref name="T"/>.</param>
+        /// <exception cref="Exception"></exception>
+        public static void DisplayRootModel(Type type, params object[] constructorParameters)
+        {
+            DisplayRootModel(Activator.CreateInstance(type, constructorParameters));
         }
 
         /// <summary>
@@ -129,26 +229,27 @@ namespace Yggdrasil
         /// Registers a implementation of <see cref="IViewLocator"/> for locating views.
         /// </summary>
         /// <param name="viewLocator">The implementation of <see cref="IViewLocator"/> which should be registered.</param>
-        /// <exception cref="ViewLocatorAlreadyRegisteredException">Thrown if there is already a implementation of <see cref="IViewLocator"/> registerd.</exception>
+        /// <exception cref="AlreadyRegisteredException">Thrown if there is already a implementation of <see cref="IViewLocator"/> registerd.</exception>
         public static void RegisterViewLocator(IViewLocator viewLocator)
         {
             if (_viewLocator != null)
-                throw new ViewLocatorAlreadyRegisteredException($"A implementation of '{nameof(IViewLocator)}' is already registered!");
+                throw new AlreadyRegisteredException($"A implementation of '{nameof(IViewLocator)}' is already registered!");
 
             _viewLocator = viewLocator;
         }
 
         /// <summary>
-        /// Adds informations about view types about the context property name and the method for burying views.
+        /// Registers a implemenation of <see cref="IViewHandler"/> for handling view actions.
         /// </summary>
-        /// <param name="type">The <see cref="Type"/> for which the definitions are valid.</param>
-        /// <param name="contextPropertyName">The name of the context property to set the view model.</param>
-        /// <param name="displayMethodName">The name of the method to display the view.</param>
-        /// <param name="buryMethodName">The name of the method which should be executed to bury a view.</param>
-        /// <param name="buriedEventName">The name of the event after the view was buried.</param>
-        public static void AddViewTypeInfo(Type type, string contextPropertyName, string displayMethodName, string buryMethodName, string buriedEventName)
+        /// <param name="viewHandler">The implememntation of <see cref="IViewHandler"/> which should be registered.</param>
+        /// <exception cref="AlreadyRegisteredException">Thrown if there is already a implementation of <see cref="IViewHandler"/> registered.</exception>
+        public static void RegisterViewHandler(IViewHandler viewHandler)
         {
-            _viewTypeInfos.Add(new ViewTypeInfo(type, contextPropertyName, displayMethodName, buryMethodName, buriedEventName));
+            if (_viewHandler != null)
+                throw new AlreadyRegisteredException($"A implementation of '{nameof(IViewHandler)}' is already registered!");
+
+            _viewHandler = viewHandler;
+            _viewHandler.RegisterGetViewForViewModelFunction(GetViewForViewModel);
         }
 
         #endregion
@@ -171,36 +272,47 @@ namespace Yggdrasil
         }
 
         /// <summary>
-        /// Get's a <see cref="ViewTypeInfo"/> for the passed <paramref name="type"/>.
+        /// Get's the context of the passed <paramref name="view"/>.
         /// </summary>
-        /// <param name="type">The <see cref="Type"/> of the view for retrieving the info.</param>
-        /// <returns><see cref="ViewTypeInfo"/> for the passed <paramref name="type"/>.</returns>
-        /// <exception cref="Exception"></exception>
-        internal static ViewTypeInfo GetViewTypeInfo(Type type)
+        /// <param name="view">The view for which the context should be retrieved.</param>
+        /// <returns>The context of the passed <paramref name="view"/>.</returns>
+        internal static object GetContextOfView(object view)
         {
-            foreach (ViewTypeInfo info in _viewTypeInfos)
-            {
-                if (info.Type.IsAssignableFrom(type))
-                    return info;
-            }
+            CheckViewHandlerRegistration();
 
-            throw new KeyNotFoundException($"For the type '{type.GetType()}' where no infos set!");
+            return _viewHandler.GetContext(view);
         }
 
         #endregion
 
         #region Private Methods
 
+        private static DisplayItem CreateAndDisplayItem(object model)
+        {
+            DisplayItem item = CreateItem(model);
+
+            _viewHandler.Display(item.View);
+
+            return item;
+        }
+
+        private static void CreateAndDisplayModalItem(object owner, object model)
+        {
+            DisplayItem item = CreateItem(model);
+            //the item must be added to the active items now because the modal display
+            //could block the further execution until the dialog is closed and therefore the bury method will throw a exception
+            _activeItems.Add(item);
+
+            _viewHandler.DisplayModal(owner, item.View);
+        }
+
         private static DisplayItem CreateItem(object model)
         {
+            CheckViewHandlerRegistration();
+
             object view = CreateView(model);
 
-            IView v = view as IView;
-
-            if (v != null)
-                v.Context = model;
-            else
-                GetViewTypeInfo(view.GetType()).ContextPropertyInfo.SetValue(view, model);
+            _viewHandler.SetContext(view, model);
 
             DisplayItem item = new DisplayItem(view, model);
 
@@ -208,11 +320,6 @@ namespace Yggdrasil
 
             if (model is AbstractBaseViewModel baseModel)
                 baseModel.Initialize();
-
-            if (v != null)
-                v.Display();
-            else
-                GetViewTypeInfo(view.GetType()).DisplayMethodInfo.Invoke(view, null);
 
             return item;
         }
@@ -229,14 +336,18 @@ namespace Yggdrasil
 
         private static void BuryItem(DisplayItem item)
         {
-            if (item.View is IView v) 
-                v.Bury();
-            else
-                GetViewTypeInfo(item.View.GetType()).BuryMethodInfo.Invoke(item.View, null);
+            _viewHandler.Bury(item.View);
 
             TransposerManager.Disable(item.View);
 
             item.Dispose();
+        }
+
+        private static void CheckViewHandlerRegistration()
+        {
+            if (_viewHandler == null)
+                throw new NotRegisteredException($"A instance of '{typeof(IViewHandler).Name}' was not registered! " +
+                    $"Register a implementation of '{typeof(IViewHandler).Name}' with '{nameof(RegisterViewHandler)}'!");
         }
 
         #endregion
