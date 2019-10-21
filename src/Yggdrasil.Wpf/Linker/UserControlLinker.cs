@@ -46,7 +46,7 @@ namespace Yggdrasil.Wpf.Linker
                 }
             }
 
-            if(registerNotifyPropertyChangeEvent)
+            if(registerNotifyPropertyChangeEvent && _notifyPropertyChangedContext != null)
                 _notifyPropertyChangedContext.PropertyChanged += NotifyPropertyChangedContext_PropertyChanged;                    
         }
 
