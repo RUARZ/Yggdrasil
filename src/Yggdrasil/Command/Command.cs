@@ -41,6 +41,18 @@ namespace Yggdrasil.Command
 
         #endregion
 
+        #region Public Methods
+
+        /// <summary>
+        /// Raises the <see cref="ICommand.CanExecuteChanged"/> event.
+        /// </summary>
+        public void RaiseCanExecuteChanged()
+        {
+            CanExecuteChanged?.Invoke(this, EventArgs.Empty);
+        }
+
+        #endregion
+
         #region Interface Implementation
 
         public event EventHandler CanExecuteChanged;
