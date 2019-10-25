@@ -1,4 +1,5 @@
 ﻿using System.Collections.Generic;
+using System.ComponentModel;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 
@@ -7,7 +8,7 @@ namespace Yggdrasil.ViewModel
     /// <summary>
     /// Abstract view model with base functionality.
     /// </summary>
-    public abstract class AbstractBaseViewModel
+    public abstract class AbstractBaseViewModel : INotifyPropertyChanged
     {
         #region Private Fields
 
@@ -57,7 +58,7 @@ namespace Yggdrasil.ViewModel
                 _values.Add(name, value);
 
                 if (notifyOnPropertyChange)
-                    NotifyPropertyChange(name);
+                    FirePropertyChanged(name);
 
                 return true;
             }
@@ -69,7 +70,7 @@ namespace Yggdrasil.ViewModel
                 _values[name] = value;
 
                 if (valueChanged && notifyOnPropertyChange)
-                    NotifyPropertyChange(name);
+                    FirePropertyChanged(name);
 
                 return valueChanged;
             }
@@ -99,16 +100,6 @@ namespace Yggdrasil.ViewModel
 
         #endregion
 
-        #region Abstract Methods
-
-        /// <summary>
-        /// Executes the notify property change.
-        /// </summary>
-        /// <param name="propertyName">The name of the property to notify property change.</param>
-        protected abstract void NotifyPropertyChange(string propertyName);
-
-        #endregion
-
         #region Virtual Methods
 
         /// <summary>
@@ -118,6 +109,21 @@ namespace Yggdrasil.ViewModel
         {
 
         }
+
+        #endregion
+
+        #region Private Methods
+
+        private void FirePropertyChanged(string propertyName)
+        {
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
+        }
+
+        #endregion
+
+        #region Interface Implementation
+
+        public event PropertyChangedEventHandler PropertyChanged;
 
         #endregion
     }
