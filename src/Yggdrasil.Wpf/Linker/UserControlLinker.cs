@@ -13,68 +13,56 @@ namespace Yggdrasil.Wpf.Linker
     public class UserControlLinker : ILinker
     {
         private UserControl _userControl;
-        private INotifyPropertyChanged _notifyPropertyChangedContext;
-        private PropertyInfo _visibleStateContextPropertyInfo;
+        private readonly PropertyChangedHandler _propertyChangedHandler = new PropertyChangedHandler();
 
         #region Interface Implementation
 
-        public void Link(object control, object context, Dictionary<string, string> linkDefinitions, Dictionary<string, MemberInfo> foundLinks, Action<object, object, string> createLinkAction)
+        public void Link(object viewElement, IEnumerable<LinkData> linkData, Action<object, object, string> createLinkAction)
         {
-            if (!(control is UserControl userControl))
+            if (!(viewElement is UserControl userControl))
                 return;
 
             _userControl = userControl;
-            _notifyPropertyChangedContext = context as INotifyPropertyChanged;
-            bool registerNotifyPropertyChangeEvent = false;
 
-            foreach(KeyValuePair<string, MemberInfo> link in foundLinks)
+            foreach (LinkData data in linkData)
             {
-                switch (link.Key)
+                switch (data.ViewElementName)
                 {
                     case nameof(UserControl.DataContext):
-                        Binding binding = new Binding(link.Value.Name);
-                        binding.Source = context;
+                        Binding binding = new Binding(data.ContextMemberInfo.Name);
+                        binding.Source = data.Context;
                         BindingOperations.SetBinding(userControl, FrameworkElement.DataContextProperty, binding);
                         break;
                     case nameof(UserControl.Visibility):
-                        registerNotifyPropertyChangeEvent = true;
-                        _visibleStateContextPropertyInfo = link.Value as PropertyInfo;
-                        SetVisibilityState();
+                        if (!(data.ContextMemberInfo is PropertyInfo pInfo))
+                            continue;
+
+                        SetVisibilityState(pInfo, data.Context);
+
+                        if (data.Context is INotifyPropertyChanged propertyChangedContext)
+                        {
+                            _propertyChangedHandler.AddNotifyPropertyChangedItem(propertyChangedContext, pInfo.Name,
+                                () => SetVisibilityState(pInfo, data.Context));
+                        }
                         break;
                     default:
-                        throw new NotSupportedException($"The link for '{link.Key}' is not supported by '{GetType().Name}'!");
+                        throw new NotSupportedException($"The link for '{data.ViewElementName}' is not supported by '{GetType().Name}'!");
                 }
             }
-
-            if(registerNotifyPropertyChangeEvent && _notifyPropertyChangedContext != null)
-                _notifyPropertyChangedContext.PropertyChanged += NotifyPropertyChangedContext_PropertyChanged;                    
         }
 
         public void Unlink()
         {
-            if (_notifyPropertyChangedContext != null)
-                _notifyPropertyChangedContext.PropertyChanged -= NotifyPropertyChangedContext_PropertyChanged;
+            _propertyChangedHandler.Dispose();
         }
 
         #endregion
 
         #region Private Methods
 
-        private void SetVisibilityState()
+        private void SetVisibilityState(PropertyInfo pInfo, object context)
         {
-            _userControl.Visibility = VisibilityHelper.BoolToVisibility((bool)_visibleStateContextPropertyInfo.GetValue(_notifyPropertyChangedContext));
-        }
-
-        #endregion
-
-        #region Event Handling
-
-        private void NotifyPropertyChangedContext_PropertyChanged(object sender, PropertyChangedEventArgs e)
-        {
-            if (e.PropertyName != _visibleStateContextPropertyInfo.Name)
-                return;
-
-            SetVisibilityState();
+            _userControl.Visibility = VisibilityHelper.BoolToVisibility((bool)pInfo.GetValue(context));
         }
 
         #endregion

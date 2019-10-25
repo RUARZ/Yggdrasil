@@ -5,6 +5,7 @@ using System.Reflection;
 using System.Windows.Controls;
 using System.Windows.Data;
 using System.Windows.Input;
+using Yggdrasil.Wpf.Helper;
 
 namespace Yggdrasil.Wpf.Linker
 {
@@ -14,70 +15,65 @@ namespace Yggdrasil.Wpf.Linker
         #region Private Fields
 
         private Button _button;
-        private object _context;
-        private PropertyInfo _enabledViewModelPropertyInfo;
         private MethodInfo _clickViewModelMethodInfo;
-        private INotifyPropertyChanged _propertyNotifyChangedContext;
+        private object _clickContext;
+        private readonly PropertyChangedHandler _propertyChangedHandler = new PropertyChangedHandler();
 
         #endregion
 
         #region Interface Implementation
 
-        public void Link(object control, object context, Dictionary<string, string> linkDefinitions, Dictionary<string, MemberInfo> foundLinks, Action<object, object, string> createLinkAction)
+        public void Link(object viewElement, IEnumerable<LinkData> linkData, Action<object, object, string> createLinkAction)
         {
-            if (!(control is Button button))
+            if (!(viewElement is Button button))
                 return;
 
             _button = button;
-            _context = context;
-            bool commandBindingCreated = false;
 
-            foreach(KeyValuePair<string, MemberInfo> definition in foundLinks)
+            foreach (LinkData data in linkData)
             {
-                switch (definition.Key)
+                switch (data.ViewElementName)
                 {
                     case nameof(Button.IsEnabled):
-                        if (!(definition.Value is PropertyInfo propInfo))
+                        if (!(data.ContextMemberInfo is PropertyInfo propInfo))
                             continue;
 
                         if (propInfo.PropertyType != typeof(bool))
                             throw new NotSupportedException($"The type '{propInfo.PropertyType}' is not supported for '{nameof(Button.IsEnabled)}'!");
 
-                        button.IsEnabled = (bool)propInfo.GetValue(_context);
+                        button.IsEnabled = (bool)propInfo.GetValue(data.Context);
 
-                        if (_context is INotifyPropertyChanged propertyChangedContext)
+                        if (data.Context is INotifyPropertyChanged propertyChangedContext)
                         {
-                            _enabledViewModelPropertyInfo = propInfo;
-                            _propertyNotifyChangedContext = propertyChangedContext;
-                            propertyChangedContext.PropertyChanged += PropertyChangedModel_PropertyChanged;
+                            _propertyChangedHandler.AddNotifyPropertyChangedItem(propertyChangedContext, propInfo.Name, 
+                                () => _button.IsEnabled = (bool)propInfo.GetValue(data.Context));
                         }
                         break;
                     case nameof(Button.Click):
-                        if (!(definition.Value is MethodInfo methodInfo))
+                        if (!(data.ContextMemberInfo is MethodInfo methodInfo))
                             continue;
 
                         _clickViewModelMethodInfo = methodInfo;
+                        _clickContext = data.Context;
                         _button.Click += Button_Click;
                         break;
                     case nameof(Button.Command):
-                        if (!(definition.Value is PropertyInfo pInfo) || !typeof(ICommand).IsAssignableFrom(pInfo.PropertyType))
+                        if (!(data.ContextMemberInfo is PropertyInfo pInfo) || !typeof(ICommand).IsAssignableFrom(pInfo.PropertyType))
                             continue;
 
-                        Binding binding = new Binding(definition.Value.Name);
-                        binding.Source = context;
+                        Binding binding = new Binding(pInfo.Name);
+                        binding.Source = data.Context;
                         BindingOperations.SetBinding(button, System.Windows.Controls.Primitives.ButtonBase.CommandProperty, binding);
                         break;
                     default:
-                        throw new NotSupportedException($"The link for '{definition.Key}' is not supported by '{GetType().Name}'!");
+                        throw new NotSupportedException($"The link for '{data.ViewElementName}' is not supported by '{GetType().Name}'!");
                 }
             }
         }
 
         public void Unlink()
         {
-            if (_propertyNotifyChangedContext != null)
-                _propertyNotifyChangedContext.PropertyChanged -= PropertyChangedModel_PropertyChanged;
-
+            _propertyChangedHandler.Dispose();
             _button.Click -= Button_Click;
         }
 
@@ -85,17 +81,9 @@ namespace Yggdrasil.Wpf.Linker
 
         #region Events
 
-        private void PropertyChangedModel_PropertyChanged(object sender, PropertyChangedEventArgs e)
-        {
-            if (e.PropertyName != _enabledViewModelPropertyInfo.Name)
-                return;
-
-            _button.IsEnabled = (bool)_enabledViewModelPropertyInfo.GetValue(_context);
-        }
-
         private void Button_Click(object sender, System.Windows.RoutedEventArgs e)
         {
-            _clickViewModelMethodInfo.Invoke(_context, null);
+            _clickViewModelMethodInfo.Invoke(_clickContext, null);
         }
 
         #endregion

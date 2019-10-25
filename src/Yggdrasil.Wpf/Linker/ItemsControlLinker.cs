@@ -18,17 +18,17 @@ namespace Yggdrasil.Wpf.Linker
 
         #region Interface Implementation
 
-        public void Link(object control, object context, Dictionary<string, string> linkDefinitions, Dictionary<string, MemberInfo> foundLinks, Action<object, object, string> createLinkAction)
+        public void Link(object viewElement, IEnumerable<LinkData> linkData, Action<object, object, string> createLinkAction)
         {
-            if (!(control is ItemsControl itemsControl))
+            if (!(viewElement is ItemsControl itemsControl))
                 return;
 
-            foreach (KeyValuePair<string, MemberInfo> definition in foundLinks)
+            foreach (LinkData data in linkData)
             {
-                switch (definition.Key)
+                switch (data.ViewElementName)
                 {
                     case nameof(ItemsControl.ItemsSource):
-                        if (!(definition.Value is PropertyInfo propInfo))
+                        if (!(data.ContextMemberInfo is PropertyInfo propInfo))
                             throw new NotSupportedException($"The {nameof(ItemsControl.ItemsSource)} must be linked to a property!");
 
                         if (!(typeof(IEnumerable).IsAssignableFrom(propInfo.PropertyType)))
@@ -37,12 +37,12 @@ namespace Yggdrasil.Wpf.Linker
                         _linkHelper = new ItemsControlLinkHelper(itemsControl, createLinkAction);
 
                         Binding binding = new Binding(propInfo.Name);
-                        binding.Source = context;
+                        binding.Source = data.Context;
                         binding.Mode = BindingMode.OneWay;
                         BindingOperations.SetBinding(itemsControl, ItemsControl.ItemsSourceProperty, binding);
                         break;
                     default:
-                        throw new NotSupportedException($"The property name '{definition.Key}' is not supported by '{GetType().Name}'!");
+                        throw new NotSupportedException($"The property name '{data.ViewElementName}' is not supported by '{GetType().Name}'!");
                 }
             }
         }

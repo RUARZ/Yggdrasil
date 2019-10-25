@@ -4,6 +4,7 @@ using System.ComponentModel;
 using System.Reflection;
 using System.Windows.Controls;
 using System.Windows.Data;
+using Yggdrasil.Wpf.Helper;
 
 namespace Yggdrasil.Wpf.Linker
 {
@@ -13,71 +14,56 @@ namespace Yggdrasil.Wpf.Linker
         #region Private Fields
 
         private TextBox _textBox;
-        private INotifyPropertyChanged _propertyChangedModel;
-        private PropertyInfo _isEnabledInfo;
+        private readonly PropertyChangedHandler _propertyChangedHandler = new PropertyChangedHandler();
 
         #endregion
 
         #region Interface Impelementation
 
-        public void Link(object control, object context, Dictionary<string, string> linkDefinitions, Dictionary<string, MemberInfo> foundLinks, Action<object, object, string> createLinkAction)
+        public void Link(object viewElement, IEnumerable<LinkData> linkData, Action<object, object, string> createLinkAction)
         {
-            if (!(control is TextBox textBox))
+            if (!(viewElement is TextBox textBox))
                 return;
 
             _textBox = textBox;
-            _propertyChangedModel = context as INotifyPropertyChanged;
 
-            bool registerNotifyPropertyChanged = false;
-
-            foreach (KeyValuePair<string, MemberInfo> link in foundLinks)
+            foreach (LinkData data in linkData)
             {
-                switch(link.Key)
+                switch (data.ViewElementName)
                 {
                     case nameof(TextBox.Text):
-                        Binding binding = new Binding(link.Value.Name);
-                        binding.Source = context;
+                        Binding binding = new Binding(data.ContextMemberInfo.Name);
+                        binding.Source = data.Context;
                         BindingOperations.SetBinding(textBox, TextBox.TextProperty, binding);
                         break;
                     case nameof(TextBox.IsEnabled):
-                        registerNotifyPropertyChanged = true;
-                        _isEnabledInfo = link.Value as PropertyInfo;
-                        SetIsEnabledState(context);
+                        PropertyInfo pInfo = data.ContextMemberInfo as PropertyInfo;
+                        SetIsEnabledState(data.Context, pInfo);
+
+                        if(data.Context is INotifyPropertyChanged propertyChangedContext)
+                        {
+                            _propertyChangedHandler.AddNotifyPropertyChangedItem(propertyChangedContext, data.ContextMemberInfo.Name,
+                                () => SetIsEnabledState(data.Context, pInfo));
+                        }                        
                         break;
                     default:
-                        throw new NotSupportedException($"The link for '{link.Key}' is not supported by '{GetType().Name}'!");
+                        throw new NotSupportedException($"The link for '{data.ViewElementName}' is not supported by '{GetType().Name}'!");
                 }
             }
-
-            if (registerNotifyPropertyChanged && _propertyChangedModel != null)
-                _propertyChangedModel.PropertyChanged += PropertyChangedModel_PropertyChanged;
         }
 
         public void Unlink()
         {
-            if (_propertyChangedModel != null)
-                _propertyChangedModel.PropertyChanged -= PropertyChangedModel_PropertyChanged;
+            _propertyChangedHandler.Dispose();
         }
 
         #endregion
 
         #region Private Methods
 
-        private void SetIsEnabledState(object context)
+        private void SetIsEnabledState(object context, PropertyInfo pInfo)
         {
-            _textBox.IsEnabled = (bool)_isEnabledInfo.GetValue(context);
-        }
-
-        #endregion
-
-        #region Event Handling
-
-        private void PropertyChangedModel_PropertyChanged(object sender, PropertyChangedEventArgs e)
-        {
-            if (e.PropertyName != _isEnabledInfo.Name)
-                return;
-
-            SetIsEnabledState(sender);
+            _textBox.IsEnabled = (bool)pInfo.GetValue(context);
         }
 
         #endregion

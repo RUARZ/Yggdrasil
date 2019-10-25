@@ -11,21 +11,21 @@ namespace Yggdrasil.Wpf.Linker
     {
         #region Interface Implementation
 
-        public void Link(object control, object context, Dictionary<string, string> linkDefinitions, Dictionary<string, MemberInfo> foundLinks, Action<object, object, string> createLinkAction)
+        public void Link(object viewElement, IEnumerable<LinkData> linkData, Action<object, object, string> createLinkAction)
         {
-            if (!(control is GridViewColumn gridViewColumn))
+            if (!(viewElement is GridViewColumn gridViewColumn))
                 return;
 
-            foreach(KeyValuePair<string, string> definition in linkDefinitions)
+            foreach (LinkData data in linkData)
             {
-                switch(definition.Key)
+                switch (data.ViewElementName)
                 {
                     case nameof(GridViewColumn.DisplayMemberBinding):
-                        Binding binding = new Binding(definition.Value);
+                        Binding binding = new Binding(data.ContextMemberInfo.Name);
                         gridViewColumn.DisplayMemberBinding = binding;
                         break;
                     default:
-                        throw new NotSupportedException($"Property '{definition.Key}' is not supported by {GetType().Name}!");
+                        throw new NotSupportedException($"Property '{data.ViewElementName}' is not supported by {GetType().Name}!");
                 }
             }
         }

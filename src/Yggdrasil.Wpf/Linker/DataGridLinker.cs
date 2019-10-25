@@ -13,41 +13,41 @@ namespace Yggdrasil.Wpf.Linker
     {
         #region Interface Implementation
 
-        public void Link(object control, object context, Dictionary<string, string> linkDefinitions, Dictionary<string, MemberInfo> foundLinks, Action<object, object, string> createLinkAction)
+        public void Link(object viewElement, IEnumerable<LinkData> linkData, Action<object, object, string> createLinkAction)
         {
-            if (!(control is DataGrid dataGrid))
+            if (!(viewElement is DataGrid dataGrid))
                 return;
 
-            foreach (KeyValuePair<string, MemberInfo> definition in foundLinks)
+            foreach (LinkData data in linkData)
             {
-                switch (definition.Key)
+                switch (data.ViewElementName)
                 {
                     case nameof(DataGrid.ItemsSource):
-                        if (!(definition.Value is PropertyInfo itemsSourcePInfo) || !typeof(IEnumerable).IsAssignableFrom(itemsSourcePInfo.PropertyType))
+                        if (!(data.ContextMemberInfo is PropertyInfo itemsSourcePInfo) || !typeof(IEnumerable).IsAssignableFrom(itemsSourcePInfo.PropertyType))
                             throw new NotSupportedException($"The member info for the '{nameof(DataGrid.ItemsSource)}' link is not of type '{typeof(PropertyInfo)}' or the property is not of type '{typeof(IEnumerable)}'!");
 
-                        CreateBinding(dataGrid, DataGrid.ItemsSourceProperty, itemsSourcePInfo.Name, context, BindingMode.OneWay);
+                        foreach (DataGridColumn col in dataGrid.Columns)
+                        {
+                            createLinkAction.Invoke(col, data.Context, col.GetValue(FrameworkElement.NameProperty) as string);
+                        }
+
+                        CreateBinding(dataGrid, DataGrid.ItemsSourceProperty, itemsSourcePInfo.Name, data.Context, BindingMode.OneWay);
                         break;
                     case nameof(DataGrid.SelectedItem):
-                        if (!(definition.Value is PropertyInfo selectedItemPInfo) || typeof(IEnumerable).IsAssignableFrom(selectedItemPInfo.PropertyType))
+                        if (!(data.ContextMemberInfo is PropertyInfo selectedItemPInfo) || typeof(IEnumerable).IsAssignableFrom(selectedItemPInfo.PropertyType))
                             throw new NotSupportedException($"The member info for the '{nameof(DataGrid.SelectedItem)}' link is not of type '{typeof(PropertyInfo)}' or the property is of type '{typeof(IEnumerable)}'!");
 
-                        CreateBinding(dataGrid, DataGrid.SelectedItemProperty, selectedItemPInfo.Name, context, BindingMode.TwoWay);
+                        CreateBinding(dataGrid, DataGrid.SelectedItemProperty, selectedItemPInfo.Name, data.Context, BindingMode.TwoWay);
                         break;
                     case nameof(DataGrid.SelectedItems):
-                        if (!(definition.Value is PropertyInfo selectedItemsPInfo) || !typeof(IEnumerable).IsAssignableFrom(selectedItemsPInfo.PropertyType))
+                        if (!(data.ContextMemberInfo is PropertyInfo selectedItemsPInfo) || !typeof(IEnumerable).IsAssignableFrom(selectedItemsPInfo.PropertyType))
                             throw new NotSupportedException($"The member info for the '{nameof(DataGrid.ItemsSource)}' link is not of type '{typeof(PropertyInfo)}' or the property is not of type '{typeof(IEnumerable)}'!");
 
-                        CreateBinding(dataGrid, DataGrid.ItemsSourceProperty, selectedItemsPInfo.Name, context, BindingMode.OneWay);
+                        CreateBinding(dataGrid, DataGrid.ItemsSourceProperty, selectedItemsPInfo.Name, data.Context, BindingMode.OneWay);
                         break;
                     default:
-                        throw new NotSupportedException($"The property name '{definition.Key}' is not supported by '{GetType().Name}'!");
+                        throw new NotSupportedException($"The property name '{data.ViewElementName}' is not supported by '{GetType().Name}'!");
                 }
-            }
-
-            foreach (System.Windows.Controls.DataGridColumn col in dataGrid.Columns)
-            {
-                createLinkAction.Invoke(col, context, col.GetValue(FrameworkElement.NameProperty) as string);
             }
         }
 

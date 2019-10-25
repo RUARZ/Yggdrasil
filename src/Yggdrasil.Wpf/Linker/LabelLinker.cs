@@ -1,7 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.ComponentModel;
-using System.Reflection;
 using System.Windows.Controls;
 using System.Windows.Data;
 
@@ -12,22 +10,22 @@ namespace Yggdrasil.Wpf.Linker
     {
         #region Interface Implementation
 
-        public void Link(object control, object context, Dictionary<string, string> linkDefinitions, Dictionary<string, MemberInfo> foundLinks, Action<object, object, string> createLinkAction)
+        public void Link(object viewElement, IEnumerable<LinkData> linkData, Action<object, object, string> createLinkAction)
         {
-            if (!(control is Label label))
+            if (!(viewElement is Label label))
                 return;
 
-            foreach(KeyValuePair<string, MemberInfo> definition in foundLinks)
+            foreach (LinkData data in linkData)
             {
-                switch (definition.Key)
+                switch (data.ViewElementName)
                 {
                     case nameof(Label.Content):
-                        Binding binding = new Binding(definition.Value.Name);
-                        binding.Source = context;
+                        Binding binding = new Binding(data.ContextMemberInfo.Name);
+                        binding.Source = data.Context;
                         BindingOperations.SetBinding(label, ContentControl.ContentProperty, binding);
                         break;
                     default:
-                        throw new NotSupportedException($"Property '{definition.Key}' is not supported by {GetType().Name}!");
+                        throw new NotSupportedException($"Property '{data.ViewElementName}' is not supported by {GetType().Name}!");
                 }
             }
         }

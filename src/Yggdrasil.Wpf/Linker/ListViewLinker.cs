@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Reflection;
 using System.Windows;
 using System.Windows.Controls;
@@ -19,17 +18,17 @@ namespace Yggdrasil.Wpf.Linker
 
         #region Interface Implementations
 
-        public void Link(object control, object context, Dictionary<string, string> linkDefinitions, Dictionary<string, MemberInfo> foundLinks, Action<object, object, string> createLinkAction)
+        public void Link(object viewElement, IEnumerable<LinkData> linkData, Action<object, object, string> createLinkAction)
         {
-            if (!(control is ListView listView))
+            if (!(viewElement is ListView listView))
                 return;
 
-            foreach (KeyValuePair<string, MemberInfo> link in foundLinks)
+            foreach (LinkData data in linkData)
             {
-                switch(link.Key)
+                switch (data.ViewElementName)
                 {
                     case nameof(ListView.ItemsSource):
-                        BindingOperations.SetBinding(listView, ItemsControl.ItemsSourceProperty, CreateBinding(link.Value.Name, context));
+                        BindingOperations.SetBinding(listView, ItemsControl.ItemsSourceProperty, CreateBinding(data.ContextMemberInfo.Name, data.Context));
 
                         if (listView.View is GridView view)
                         {
@@ -41,15 +40,15 @@ namespace Yggdrasil.Wpf.Linker
 
                             foreach (GridViewColumn col in view.Columns)
                             {
-                                createLinkAction(col, context, GetColumnName(col, window));
+                                createLinkAction(col, data.Context, GetColumnName(col, window));
                             }
                         }
                         break;
                     case nameof(ListView.SelectedItem):
-                        BindingOperations.SetBinding(listView, ListBox.SelectedItemProperty, CreateBinding(link.Value.Name, context));
+                        BindingOperations.SetBinding(listView, ListBox.SelectedItemProperty, CreateBinding(data.ContextMemberInfo.Name, data.Context));
                         break;
                     default:
-                        throw new NotSupportedException($"Property '{link.Key}' is not supported by {GetType().Name}!");
+                        throw new NotSupportedException($"Property '{data.ViewElementName}' is not supported by {GetType().Name}!");
                 }
             }
         }

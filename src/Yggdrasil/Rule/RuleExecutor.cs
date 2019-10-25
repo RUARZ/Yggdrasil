@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Reflection;
 using Yggdrasil.Resource;
@@ -19,6 +20,11 @@ namespace Yggdrasil
 
         #region Public Methods
 
+        /// <summary>
+        /// Creates the links between the passed <see cref="view"/> and <paramref name="context"/>.
+        /// </summary>
+        /// <param name="view">The view for searching the fields and creating the links.</param>
+        /// <param name="context">The context to link with the view fields.</param>
         public void CreateLinks(object view, object context)
         {
             //if no rules defined for links --> nothing to do
@@ -28,12 +34,17 @@ namespace Yggdrasil
             EnumerateFields(view.GetType(), info => CreateLink(info.GetValue(view), context, info.Name));
         }
 
+        /// <summary>
+        /// Set's the resources based on the reource rules for the passed <paramref name="view"/>.
+        /// </summary>
+        /// <param name="view">The view on which the defined resources should be set.</param>
         public void SetResources(object view)
         {
             //if no rules defined for textresources --> nothing to do
             if (!RuleProvider.AreTextResourceKeyRulesDefined)
                 return;
 
+            //first check for the view itself if a resource was defined which should be set.
             Type viewType = view.GetType();
             TextResourceKeyRule rule = RuleProvider.GetTextResourceKeyRule(viewType);
 
@@ -42,6 +53,7 @@ namespace Yggdrasil
                 SetResource(viewType, view, null, viewType);
             }
 
+            // second enumerate through the fields of the view to set the resources.
             EnumerateFields(viewType, info =>
             {
                 SetResource(info.FieldType, info.GetValue(view), info.Name, viewType);
@@ -82,49 +94,61 @@ namespace Yggdrasil
         {
             Type contextType = context?.GetType();
 
-            Dictionary<string, MemberInfo> foundLinks = new Dictionary<string, MemberInfo>();
-            Dictionary<string, string> linkDefinitions = new Dictionary<string, string>();
-
+            List<LinkData> linkData = new List<LinkData>();
+            
             foreach (LinkRule rule in linkRules)
             {
-                MemberInfo info = null;
-                string linkInfoName = rule.GetLinkInfoName(controlName);
+                LinkData data = CreateLinkData(rule.GetLinkInfoName(controlName), context, rule.InfoName, rule.RuleType);
 
-                switch (rule.RuleType)
-                {
-                    case LinkRuleType.Property:
-                        info = !string.IsNullOrEmpty(linkInfoName) ? contextType?.GetProperty(linkInfoName) : null;
-                        break;
-                    case LinkRuleType.Event:
-                        info = contextType?.GetMethod(linkInfoName);
-                        break;
-                }
-
-                linkDefinitions.Add(rule.InfoName, linkInfoName);
-                if (info != null)
-                    foundLinks.Add(rule.InfoName, info);
+                if (data != null)
+                    linkData.Add(data);
             }
 
+            //if no data found to link then return and don't call / add the linker
+            if (linkData.Count == 0)
+                return;
+
             _linkers.Add(linker);
-            linker.Link(control, context, linkDefinitions, foundLinks, CreateLink);
+            linker.Link(control, linkData, CreateLink);
         }
 
-        //TODO continue implementing to link properties in sub classes if the wished property could not be found in 
-        //the passed context.
-        //private MemberInfo GetMemberInfo(object context, LinkRuleType linkType, string infoName)
-        //{
-        //    MemberInfo info = null;
+        private LinkData CreateLinkData(string contextInfoName, object context, string viewElementInfoName, LinkRuleType linkType)
+        {
+            if (context == null)
+                return null;
 
-        //    switch (linkType)
-        //    {
-        //        case LinkRuleType.Property:
-        //            break;
-        //        case LinkRuleType.Event:
-        //            break;
-        //    }
+            MemberInfo info = null;
+            Type contextType = context.GetType();
 
+            switch (linkType)
+            {
+                case LinkRuleType.Property:
+                    info = !string.IsNullOrEmpty(contextInfoName) ? contextType?.GetProperty(contextInfoName) : null;
+                    break;
+                case LinkRuleType.Event:
+                    info = contextType?.GetMethod(contextInfoName);
+                    break;
+            }
 
-        //}
+            // if there was already a match found then create a LinkData and return it
+            if (info != null)
+                return new LinkData(viewElementInfoName, info, context);
+
+            // if no match found then search within all properties of the passed context which are a class itself (except enumerables)
+            foreach (PropertyInfo pInfo in contextType.GetProperties(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic))
+            {
+                if (!pInfo.PropertyType.IsClass || typeof(IEnumerable).IsAssignableFrom(pInfo.PropertyType))
+                    continue;
+
+                LinkData data = CreateLinkData(contextInfoName, pInfo.GetValue(context), viewElementInfoName, linkType);
+
+                // if a match found in the sub class then return the link data.
+                if (data != null)
+                    return data;
+            }
+
+            return null;
+        }
 
         private void SetResource(Type type, object control, string controlName, Type viewType)
         {

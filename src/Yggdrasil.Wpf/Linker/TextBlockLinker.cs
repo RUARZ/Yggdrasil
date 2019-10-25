@@ -1,10 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.ComponentModel;
-using System.Reflection;
 using System.Windows.Controls;
 using System.Windows.Data;
-using Yggdrasil.Transposer;
 
 namespace Yggdrasil.Wpf.Linker
 {
@@ -19,23 +16,22 @@ namespace Yggdrasil.Wpf.Linker
         #endregion
 
         #region Interface Implementation
-
-        public void Link(object control, object context, Dictionary<string, string> linkDefinitions, Dictionary<string, MemberInfo> foundLinks, Action<object, object, string> createLinkAction)
+        public void Link(object viewElement, IEnumerable<LinkData> linkData, Action<object, object, string> createLinkAction)
         {
-            if (!(control is TextBlock textBlock))
+            if (!(viewElement is TextBlock textBlock))
                 return;
 
-            foreach (KeyValuePair<string, MemberInfo> link in foundLinks)
+            foreach (LinkData data in linkData)
             {
-                switch (link.Key)
+                switch (data.ViewElementName)
                 {
                     case nameof(TextBlock.Text):
-                        Binding binding = new Binding(link.Value.Name);
-                        binding.Source = context;
+                        Binding binding = new Binding(data.ContextMemberInfo.Name);
+                        binding.Source = data.Context;
                         BindingOperations.SetBinding(textBlock, TextBlock.TextProperty, binding);
                         break;
                     default:
-                        throw new NotSupportedException($"Property '{link.Key}' is not supported by {GetType().Name}!");
+                        throw new NotSupportedException($"Property '{data.ViewElementName}' is not supported by {GetType().Name}!");
                 }
             }
         }
