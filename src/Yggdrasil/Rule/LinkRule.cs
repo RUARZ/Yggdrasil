@@ -22,32 +22,17 @@ namespace Yggdrasil
         #endregion
 
         #region Constructor
-
-        /// <summary>
-        /// Creates a new instance of <see cref="LinkRule"/> and sets its definitions.
-        /// </summary>
-        /// <param name="infoName">The name of the property, method, event... of the control which should be linked to the view model.</param>
-        /// <param name="resultNameDefinition">The definition of the name of the property, method, event... of the view model for linking.</param>
-        /// <param name="ruleType">The type of the rule.</param>
-        public LinkRule(string infoName, string resultNameDefinition, LinkRuleType ruleType)
-        {
-            InfoName = infoName;
-            _resultInfoNameDefinition = resultNameDefinition;
-            RuleType = ruleType;
-        }
-
+        
         /// <summary>
         /// Creates a new instance of <see cref="LinkRule"/> and sets its definitions.
         /// </summary>
         /// <param name="infoName">The name of the property, method, event... of the control which should be linked to the view model.</param>
         /// <param name="controlNameDefinition">Definition of the naming of the control.</param>
         /// <param name="resultNameDefinition">The definition of the name of the property, method, event... of the view model for linking.</param>
-        /// <param name="ruleType">The type of the rule.</param>
-        public LinkRule(string infoName, string controlNameDefinition, string resultNameDefinition, LinkRuleType ruleType)
+        public LinkRule(string infoName, string controlNameDefinition, string resultNameDefinition)
         {
             InfoName = infoName;
             _resultInfoNameDefinition = resultNameDefinition;
-            RuleType = ruleType;
             _controlNameRegex = CreateControlNameRegex(controlNameDefinition);
         }
 
@@ -59,10 +44,6 @@ namespace Yggdrasil
         /// The name of the property, method, event... of the control which should be linked to the view model.
         /// </summary>
         public string InfoName { get; }
-        /// <summary>
-        /// The type of the rule.
-        /// </summary>
-        public LinkRuleType RuleType { get; }
 
         #endregion
 
@@ -93,6 +74,9 @@ namespace Yggdrasil
 
         private Regex CreateControlNameRegex(string controlNameDefinition)
         {
+            if (controlNameDefinition == null)
+                return null;
+
             string regexPattern = controlNameDefinition
                 .Replace(NAME_PLACEHOLDER_NAME, $"(?<{NAME_GROUP_NAME}>\\w+)");
 

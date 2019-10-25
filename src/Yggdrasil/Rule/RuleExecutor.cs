@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Linq;
 using System.Reflection;
 using Yggdrasil.Resource;
 
@@ -77,7 +78,7 @@ namespace Yggdrasil
             if (control == null)
                 return;
 
-            List<LinkRule> linkRules = RuleProvider.GetLinkRulesForType(control.GetType());
+            IReadOnlyList<LinkRule> linkRules = RuleProvider.GetLinkRulesForType(control.GetType());
 
             if (linkRules.Count <= 0)
                 return;
@@ -98,7 +99,7 @@ namespace Yggdrasil
             
             foreach (LinkRule rule in linkRules)
             {
-                LinkData data = CreateLinkData(rule.GetLinkInfoName(controlName), context, rule.InfoName, rule.RuleType);
+                LinkData data = CreateLinkData(rule.GetLinkInfoName(controlName), context, rule.InfoName);
 
                 if (data != null)
                     linkData.Add(data);
@@ -112,24 +113,14 @@ namespace Yggdrasil
             linker.Link(control, linkData, CreateLink);
         }
 
-        private LinkData CreateLinkData(string contextInfoName, object context, string viewElementInfoName, LinkRuleType linkType)
+        private LinkData CreateLinkData(string contextInfoName, object context, string viewElementInfoName)
         {
             if (context == null)
                 return null;
 
-            MemberInfo info = null;
             Type contextType = context.GetType();
-
-            switch (linkType)
-            {
-                case LinkRuleType.Property:
-                    info = !string.IsNullOrEmpty(contextInfoName) ? contextType?.GetProperty(contextInfoName) : null;
-                    break;
-                case LinkRuleType.Event:
-                    info = contextType?.GetMethod(contextInfoName);
-                    break;
-            }
-
+            MemberInfo info = contextType.GetMember(contextInfoName, BindingFlags.Instance | BindingFlags.Public).FirstOrDefault();
+            
             // if there was already a match found then create a LinkData and return it
             if (info != null)
                 return new LinkData(viewElementInfoName, info, context);
@@ -140,7 +131,7 @@ namespace Yggdrasil
                 if (!pInfo.PropertyType.IsClass || typeof(IEnumerable).IsAssignableFrom(pInfo.PropertyType))
                     continue;
 
-                LinkData data = CreateLinkData(contextInfoName, pInfo.GetValue(context), viewElementInfoName, linkType);
+                LinkData data = CreateLinkData(contextInfoName, pInfo.GetValue(context), viewElementInfoName);
 
                 // if a match found in the sub class then return the link data.
                 if (data != null)

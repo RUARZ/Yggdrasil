@@ -20,7 +20,7 @@ namespace Yggdrasil
         #region Private Fields
 
         private static readonly List<TypeRule> _typeRules = new List<TypeRule>();
-        private static readonly Dictionary<Type, List<LinkRule>> _linkRules = new Dictionary<Type, List<LinkRule>>();
+        private static readonly Dictionary<Type, ViewElementLinkRules> _linkRules = new Dictionary<Type, ViewElementLinkRules>();
         private static readonly Dictionary<Type, TextResourceKeyRule> _textResourceKeyRules = new Dictionary<Type, TextResourceKeyRule>();
 
         #endregion
@@ -51,34 +51,20 @@ namespace Yggdrasil
         }
 
         /// <summary>
-        /// Adds a definition for creating a link between a control property, event, .. to a view model property, event, method, ...
+        /// Adds a definition for creating a link between a view element and a context.
         /// </summary>
-        /// <param name="controlType"><see cref="Type"/> of the control for which the link is for.</param>
-        /// <param name="ruleType">The type of the rule.</param>
-        /// <param name="controlInfoName">The name of the controls event, property, .. for the link.</param>
-        /// <param name="viewModelInfoNameDefinition">The definition of the resulting info name of the view model. Use '<Name>' as placeholder for the control name.</param>
-        public static void AddLinkRule(Type controlType, LinkRuleType ruleType, string controlInfoName, string viewModelInfoNameDefinition)
+        /// <param name="controlType"><see cref="Type"/> of the view element for which the link is for.</param>
+        /// <param name="viewElementNameDefinition">The definition for getting the view element base name.</param>
+        /// <param name="nameDefinitions">Definitions for linking view element members to context members.</param>
+        public static void AddLinkRule(Type controlType, string viewElementNameDefinition, params (string ViewElementMemberName, string ContextMemberNameDefinition)[] nameDefinitions)
         {
             if (!_linkRules.ContainsKey(controlType))
-                _linkRules.Add(controlType, new List<LinkRule>());
+                _linkRules.Add(controlType, new ViewElementLinkRules(viewElementNameDefinition));
 
-            _linkRules[controlType].Add(new LinkRule(controlInfoName, viewModelInfoNameDefinition, ruleType));
-        }
-
-        /// <summary>
-        /// Adds a definition for creating a link between a control property, event, .. to a view model property, event, method, ...
-        /// </summary>
-        /// <param name="controlType"><see cref="Type"/> of the control for which the link is for.</param>
-        /// <param name="ruleType">The type of the rule.</param>
-        /// <param name="controlInfoName">The name of the controls event, property, .. for the link.</param>
-        /// <param name="controlNameDefinition">The definition of the name of the control.</param>
-        /// <param name="viewModelInfoNameDefinition">The definition of the resulting info name of the view model. Use '<Name>' as placeholder for the control name.</param>
-        public static void AddLinkRule(Type controlType, LinkRuleType ruleType, string controlInfoName, string controlNameDefinition, string viewModelInfoNameDefinition)
-        {
-            if (!_linkRules.ContainsKey(controlType))
-                _linkRules.Add(controlType, new List<LinkRule>());
-
-            _linkRules[controlType].Add(new LinkRule(controlInfoName, controlNameDefinition, viewModelInfoNameDefinition, ruleType));
+            foreach (var definition in nameDefinitions)
+            {
+                _linkRules[controlType].Add(definition.ViewElementMemberName, definition.ContextMemberNameDefinition);
+            }
         }
 
         /// <summary>
@@ -127,12 +113,12 @@ namespace Yggdrasil
         /// <param name="type">The <see cref="Type"/> for which the <see cref="LinkRule"/>s should be retrieved.</param>
         /// <returns>The defined <see cref="LinkRule"/>s for the passed <paramref name="type"/>. If no <see cref="LinkRule"/> is defined then a empty
         /// list will be returend.</returns>
-        internal static List<LinkRule> GetLinkRulesForType(Type type)
+        internal static IReadOnlyList<LinkRule> GetLinkRulesForType(Type type)
         {
             if (_linkRules.ContainsKey(type))
-                return _linkRules[type];
+                return _linkRules[type].Rules;
 
-            return _linkRules.FirstOrDefault(x => x.Key.IsAssignableFrom(type)).Value ?? new List<LinkRule>();
+            return _linkRules.FirstOrDefault(x => x.Key.IsAssignableFrom(type)).Value?.Rules ?? new List<LinkRule>();
         }
 
         /// <summary>
