@@ -9,12 +9,6 @@ namespace Yggdrasil.Wpf.Linker
     [RegisterLinker(typeof(TextBlock))]
     public class TextBlockLinker : ILinker
     {
-        #region Private Fields
-
-        private TextBlock _textBlock;
-
-        #endregion
-
         #region Interface Implementation
         public void Link(object viewElement, IEnumerable<LinkData> linkData, Action<object, object, string> createLinkAction)
         {

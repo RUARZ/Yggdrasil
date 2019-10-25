@@ -10,12 +10,6 @@ namespace Yggdrasil.Wpf.Linker
     [RegisterLinker(typeof(ListView))]
     public class ListViewLinker : ILinker
     {
-        #region Private Fields
-
-        private ItemsControlLinkHelper _linkHelper;
-
-        #endregion
-
         #region Interface Implementations
 
         public void Link(object viewElement, IEnumerable<LinkData> linkData, Action<object, object, string> createLinkAction)
@@ -55,7 +49,7 @@ namespace Yggdrasil.Wpf.Linker
 
         public void Unlink()
         {
-            _linkHelper?.Dispose();
+            
         }
 
         #endregion
