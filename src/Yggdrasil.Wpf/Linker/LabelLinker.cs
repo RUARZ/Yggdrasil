@@ -1,7 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Reflection;
 using System.Windows.Controls;
-using System.Windows.Data;
+using Yggdrasil.Wpf.Helper;
 
 namespace Yggdrasil.Wpf.Linker
 {
@@ -17,12 +18,12 @@ namespace Yggdrasil.Wpf.Linker
 
             foreach (LinkData data in linkData)
             {
+                PropertyInfo pInfo = data.ContextMemberInfo as PropertyInfo;
+
                 switch (data.ViewElementName)
                 {
                     case nameof(Label.Content):
-                        Binding binding = new Binding(data.ContextMemberInfo.Name);
-                        binding.Source = data.Context;
-                        BindingOperations.SetBinding(label, ContentControl.ContentProperty, binding);
+                        BindingHandler.SetBinding(label, ContentControl.ContentProperty, pInfo, data.Context);
                         break;
                     default:
                         throw new NotSupportedException($"Property '{data.ViewElementName}' is not supported by {GetType().Name}!");

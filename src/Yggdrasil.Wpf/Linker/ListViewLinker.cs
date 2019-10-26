@@ -3,7 +3,8 @@ using System.Collections.Generic;
 using System.Reflection;
 using System.Windows;
 using System.Windows.Controls;
-using System.Windows.Data;
+using System.Windows.Controls.Primitives;
+using Yggdrasil.Wpf.Helper;
 
 namespace Yggdrasil.Wpf.Linker
 {
@@ -19,10 +20,12 @@ namespace Yggdrasil.Wpf.Linker
 
             foreach (LinkData data in linkData)
             {
+                PropertyInfo pInfo = data.ContextMemberInfo as PropertyInfo;
+
                 switch (data.ViewElementName)
                 {
                     case nameof(ListView.ItemsSource):
-                        BindingOperations.SetBinding(listView, ItemsControl.ItemsSourceProperty, CreateBinding(data.ContextMemberInfo.Name, data.Context));
+                        BindingHandler.SetBinding(listView, ItemsControl.ItemsSourceProperty, pInfo, data.Context);
 
                         if (listView.View is GridView view)
                         {
@@ -39,7 +42,7 @@ namespace Yggdrasil.Wpf.Linker
                         }
                         break;
                     case nameof(ListView.SelectedItem):
-                        BindingOperations.SetBinding(listView, ListBox.SelectedItemProperty, CreateBinding(data.ContextMemberInfo.Name, data.Context));
+                        BindingHandler.SetBinding(listView, Selector.SelectedItemProperty, pInfo, data.Context);
                         break;
                     default:
                         throw new NotSupportedException($"Property '{data.ViewElementName}' is not supported by {GetType().Name}!");
@@ -55,16 +58,6 @@ namespace Yggdrasil.Wpf.Linker
         #endregion
 
         #region Private Methods
-
-        private Binding CreateBinding(string propertyName, object context)
-        {
-            Binding binding = new Binding(propertyName);
-
-            if (context != null)
-                binding.Source = context;
-
-            return binding;
-        }
 
         private string GetColumnName(GridViewColumn column, Window window)
         {

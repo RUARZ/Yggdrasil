@@ -1,8 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Reflection;
 using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
-using System.Windows.Data;
+using Yggdrasil.Wpf.Helper;
 
 namespace Yggdrasil.Wpf.Linker
 {
@@ -18,17 +19,21 @@ namespace Yggdrasil.Wpf.Linker
 
             foreach (LinkData data in linkData)
             {
+                PropertyInfo pInfo = data.ContextMemberInfo as PropertyInfo;
+
                 switch (data.ViewElementName)
                 {
                     case nameof(ComboBox.ItemsSource):
-                        Binding binding = new Binding(data.ContextMemberInfo.Name);
-                        binding.Source = data.Context;
-                        BindingOperations.SetBinding(comboBox, ItemsControl.ItemsSourceProperty, binding);
+                        if (pInfo == null)
+                            continue;
+
+                        BindingHandler.SetBinding(comboBox, ItemsControl.ItemsSourceProperty, pInfo, data.Context);
                         break;
                     case nameof(ComboBox.SelectedItem):
-                        Binding binding2 = new Binding(data.ContextMemberInfo.Name);
-                        binding2.Source = data.Context;
-                        BindingOperations.SetBinding(comboBox, Selector.SelectedValueProperty, binding2);
+                        if (pInfo == null)
+                            continue;
+
+                        BindingHandler.SetBinding(comboBox, Selector.SelectedValueProperty, pInfo, data.Context);
                         break;
                     default:
                         throw new NotSupportedException($"The link for '{data.ViewElementName}' is not supported by '{GetType().Name}'!");

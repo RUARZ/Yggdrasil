@@ -4,7 +4,8 @@ using System.Collections.Generic;
 using System.Reflection;
 using System.Windows;
 using System.Windows.Controls;
-using System.Windows.Data;
+using System.Windows.Controls.Primitives;
+using Yggdrasil.Wpf.Helper;
 
 namespace Yggdrasil.Wpf.Linker
 {
@@ -20,10 +21,12 @@ namespace Yggdrasil.Wpf.Linker
 
             foreach (LinkData data in linkData)
             {
+                PropertyInfo pInfo = data.ContextMemberInfo as PropertyInfo;
+
                 switch (data.ViewElementName)
                 {
                     case nameof(DataGrid.ItemsSource):
-                        if (!(data.ContextMemberInfo is PropertyInfo itemsSourcePInfo) || !typeof(IEnumerable).IsAssignableFrom(itemsSourcePInfo.PropertyType))
+                        if (pInfo == null || !typeof(IEnumerable).IsAssignableFrom(pInfo.PropertyType))
                             throw new NotSupportedException($"The member info for the '{nameof(DataGrid.ItemsSource)}' link is not of type '{typeof(PropertyInfo)}' or the property is not of type '{typeof(IEnumerable)}'!");
 
                         foreach (DataGridColumn col in dataGrid.Columns)
@@ -31,19 +34,13 @@ namespace Yggdrasil.Wpf.Linker
                             createLinkAction.Invoke(col, data.Context, col.GetValue(FrameworkElement.NameProperty) as string);
                         }
 
-                        CreateBinding(dataGrid, DataGrid.ItemsSourceProperty, itemsSourcePInfo.Name, data.Context, BindingMode.OneWay);
+                        BindingHandler.SetBinding(dataGrid, ItemsControl.ItemsSourceProperty, pInfo, data.Context);
                         break;
                     case nameof(DataGrid.SelectedItem):
-                        if (!(data.ContextMemberInfo is PropertyInfo selectedItemPInfo) || typeof(IEnumerable).IsAssignableFrom(selectedItemPInfo.PropertyType))
+                        if (pInfo == null || typeof(IEnumerable).IsAssignableFrom(pInfo.PropertyType))
                             throw new NotSupportedException($"The member info for the '{nameof(DataGrid.SelectedItem)}' link is not of type '{typeof(PropertyInfo)}' or the property is of type '{typeof(IEnumerable)}'!");
 
-                        CreateBinding(dataGrid, DataGrid.SelectedItemProperty, selectedItemPInfo.Name, data.Context, BindingMode.TwoWay);
-                        break;
-                    case nameof(DataGrid.SelectedItems):
-                        if (!(data.ContextMemberInfo is PropertyInfo selectedItemsPInfo) || !typeof(IEnumerable).IsAssignableFrom(selectedItemsPInfo.PropertyType))
-                            throw new NotSupportedException($"The member info for the '{nameof(DataGrid.ItemsSource)}' link is not of type '{typeof(PropertyInfo)}' or the property is not of type '{typeof(IEnumerable)}'!");
-
-                        CreateBinding(dataGrid, DataGrid.ItemsSourceProperty, selectedItemsPInfo.Name, data.Context, BindingMode.OneWay);
+                        BindingHandler.SetBinding(dataGrid, Selector.SelectedItemProperty, pInfo, data.Context);
                         break;
                     default:
                         throw new NotSupportedException($"The property name '{data.ViewElementName}' is not supported by '{GetType().Name}'!");
@@ -54,19 +51,6 @@ namespace Yggdrasil.Wpf.Linker
         public void Unlink()
         {
             
-        }
-
-        #endregion
-
-        #region Private Methods
-
-        private void CreateBinding(DataGrid dataGrid, DependencyProperty dependencyProperty, string path, object source, BindingMode mode)
-        {
-            Binding binding = new Binding(path);
-            binding.Source = source;
-            binding.Mode = mode;
-
-            BindingOperations.SetBinding(dataGrid, dependencyProperty, binding);
         }
 
         #endregion

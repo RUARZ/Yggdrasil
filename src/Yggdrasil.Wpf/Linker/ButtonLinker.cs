@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.ComponentModel;
 using System.Reflection;
 using System.Windows.Controls;
-using System.Windows.Data;
+using System.Windows.Controls.Primitives;
 using System.Windows.Input;
 using Yggdrasil.Wpf.Helper;
 
@@ -32,21 +32,23 @@ namespace Yggdrasil.Wpf.Linker
 
             foreach (LinkData data in linkData)
             {
+                PropertyInfo pInfo = data.ContextMemberInfo as PropertyInfo;
+
                 switch (data.ViewElementName)
                 {
                     case nameof(Button.IsEnabled):
-                        if (!(data.ContextMemberInfo is PropertyInfo propInfo))
+                        if (pInfo == null)
                             continue;
 
-                        if (propInfo.PropertyType != typeof(bool))
-                            throw new NotSupportedException($"The type '{propInfo.PropertyType}' is not supported for '{nameof(Button.IsEnabled)}'!");
+                        if (pInfo.PropertyType != typeof(bool))
+                            throw new NotSupportedException($"The type '{pInfo.PropertyType}' is not supported for '{nameof(Button.IsEnabled)}'!");
 
-                        button.IsEnabled = (bool)propInfo.GetValue(data.Context);
+                        button.IsEnabled = (bool)pInfo.GetValue(data.Context);
 
                         if (data.Context is INotifyPropertyChanged propertyChangedContext)
                         {
-                            _propertyChangedHandler.AddNotifyPropertyChangedItem(propertyChangedContext, propInfo.Name, 
-                                () => _button.IsEnabled = (bool)propInfo.GetValue(data.Context));
+                            _propertyChangedHandler.AddNotifyPropertyChangedItem(propertyChangedContext, pInfo.Name, 
+                                () => _button.IsEnabled = (bool)pInfo.GetValue(data.Context));
                         }
                         break;
                     case nameof(Button.Click):
@@ -58,12 +60,10 @@ namespace Yggdrasil.Wpf.Linker
                         _button.Click += Button_Click;
                         break;
                     case nameof(Button.Command):
-                        if (!(data.ContextMemberInfo is PropertyInfo pInfo) || !typeof(ICommand).IsAssignableFrom(pInfo.PropertyType))
+                        if (pInfo == null || !typeof(ICommand).IsAssignableFrom(pInfo.PropertyType))
                             continue;
 
-                        Binding binding = new Binding(pInfo.Name);
-                        binding.Source = data.Context;
-                        BindingOperations.SetBinding(button, System.Windows.Controls.Primitives.ButtonBase.CommandProperty, binding);
+                        BindingHandler.SetBinding(button, ButtonBase.CommandProperty, pInfo, data.Context);
                         break;
                     default:
                         throw new NotSupportedException($"The link for '{data.ViewElementName}' is not supported by '{GetType().Name}'!");

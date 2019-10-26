@@ -4,7 +4,6 @@ using System.ComponentModel;
 using System.Reflection;
 using System.Windows;
 using System.Windows.Controls;
-using System.Windows.Data;
 using Yggdrasil.Wpf.Helper;
 
 namespace Yggdrasil.Wpf.Linker
@@ -26,15 +25,15 @@ namespace Yggdrasil.Wpf.Linker
 
             foreach (LinkData data in linkData)
             {
+                PropertyInfo pInfo = data.ContextMemberInfo as PropertyInfo;
+
                 switch (data.ViewElementName)
                 {
                     case nameof(UserControl.DataContext):
-                        Binding binding = new Binding(data.ContextMemberInfo.Name);
-                        binding.Source = data.Context;
-                        BindingOperations.SetBinding(userControl, FrameworkElement.DataContextProperty, binding);
+                        BindingHandler.SetBinding(userControl, FrameworkElement.DataContextProperty, pInfo, data.Context);
                         break;
                     case nameof(UserControl.Visibility):
-                        if (!(data.ContextMemberInfo is PropertyInfo pInfo))
+                        if (pInfo == null)
                             continue;
 
                         SetVisibilityState(pInfo, data.Context);

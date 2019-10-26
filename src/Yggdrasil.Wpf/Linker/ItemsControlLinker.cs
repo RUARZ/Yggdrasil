@@ -3,7 +3,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Reflection;
 using System.Windows.Controls;
-using System.Windows.Data;
+using Yggdrasil.Wpf.Helper;
 
 namespace Yggdrasil.Wpf.Linker
 {
@@ -25,21 +25,20 @@ namespace Yggdrasil.Wpf.Linker
 
             foreach (LinkData data in linkData)
             {
+                PropertyInfo pInfo = data.ContextMemberInfo as PropertyInfo;
+
                 switch (data.ViewElementName)
                 {
                     case nameof(ItemsControl.ItemsSource):
-                        if (!(data.ContextMemberInfo is PropertyInfo propInfo))
+                        if (pInfo == null)
                             throw new NotSupportedException($"The {nameof(ItemsControl.ItemsSource)} must be linked to a property!");
 
-                        if (!(typeof(IEnumerable).IsAssignableFrom(propInfo.PropertyType)))
+                        if (!(typeof(IEnumerable).IsAssignableFrom(pInfo.PropertyType)))
                             throw new NotSupportedException($"The {nameof(ItemsControl.ItemsSource)} must be linked to a implementation of '{typeof(IEnumerable)}'!");
 
                         _linkHelper = new ItemsControlLinkHelper(itemsControl, createLinkAction);
 
-                        Binding binding = new Binding(propInfo.Name);
-                        binding.Source = data.Context;
-                        binding.Mode = BindingMode.OneWay;
-                        BindingOperations.SetBinding(itemsControl, ItemsControl.ItemsSourceProperty, binding);
+                        BindingHandler.SetBinding(itemsControl, ItemsControl.ItemsSourceProperty, pInfo, data.Context);
                         break;
                     default:
                         throw new NotSupportedException($"The property name '{data.ViewElementName}' is not supported by '{GetType().Name}'!");

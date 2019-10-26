@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.ComponentModel;
 using System.Reflection;
 using System.Windows.Controls;
-using System.Windows.Data;
 using Yggdrasil.Wpf.Helper;
 
 namespace Yggdrasil.Wpf.Linker
@@ -29,15 +28,14 @@ namespace Yggdrasil.Wpf.Linker
 
             foreach (LinkData data in linkData)
             {
+                PropertyInfo pInfo = data.ContextMemberInfo as PropertyInfo;
+
                 switch (data.ViewElementName)
                 {
                     case nameof(TextBox.Text):
-                        Binding binding = new Binding(data.ContextMemberInfo.Name);
-                        binding.Source = data.Context;
-                        BindingOperations.SetBinding(textBox, TextBox.TextProperty, binding);
+                        BindingHandler.SetBinding(textBox, TextBox.TextProperty, pInfo, data.Context);
                         break;
                     case nameof(TextBox.IsEnabled):
-                        PropertyInfo pInfo = data.ContextMemberInfo as PropertyInfo;
                         SetIsEnabledState(data.Context, pInfo);
 
                         if(data.Context is INotifyPropertyChanged propertyChangedContext)
