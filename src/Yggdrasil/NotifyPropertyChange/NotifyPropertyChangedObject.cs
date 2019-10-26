@@ -91,6 +91,15 @@ namespace Yggdrasil.NotifyPropertyChange
             return (T)_values[name];
         }
 
+        /// <summary>
+        /// Fires the <see cref="INotifyPropertyChanged.PropertyChanged"/>.
+        /// </summary>
+        /// <param name="propertyName">The name of the property for the event.</param>
+        protected void NotifyPropertyChanged([CallerMemberName] string propertyName = null)
+        {
+            FireNotifyPropertyChange(propertyName);
+        }
+
         #endregion
 
         #region Private Methods
