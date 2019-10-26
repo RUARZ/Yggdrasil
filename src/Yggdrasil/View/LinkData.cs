@@ -1,4 +1,5 @@
-﻿using System.Reflection;
+﻿using System.Collections.Generic;
+using System.Reflection;
 
 namespace Yggdrasil
 {
@@ -15,11 +16,13 @@ namespace Yggdrasil
         /// <param name="viewElementName">The name of the property or event of the view element which should be linked.</param>
         /// <param name="memberInfo">The member Info of the context which should be linked to the view element.</param>
         /// <param name="context">The context to which the view property or element should get linked.</param>
-        public LinkData(string viewElementName, MemberInfo memberInfo, object context)
+        /// <param name="propertyPath">The path until finding the final <paramref name="memberInfo"/>.</param>
+        public LinkData(string viewElementName, MemberInfo memberInfo, object context, IEnumerable<PropertyInfo> propertyPath)
         {
             ViewElementName = viewElementName;
             ContextMemberInfo = memberInfo;
             Context = context;
+            PropertyPath = propertyPath;
         }
 
         #endregion
@@ -40,6 +43,11 @@ namespace Yggdrasil
         /// The context for the link.
         /// </summary>
         public object Context { get; }
+
+        /// <summary>
+        /// The path of <see cref="PropertyInfo"/>s until finding the final <see cref="ContextMemberInfo"/>.
+        /// </summary>
+        public IEnumerable<PropertyInfo> PropertyPath { get; }
 
         #endregion
     }

@@ -99,7 +99,7 @@ namespace Yggdrasil
             
             foreach (LinkRule rule in linkRules)
             {
-                LinkData data = CreateLinkData(rule.GetLinkInfoName(controlName), context.GetType(), context, rule.InfoName);
+                LinkData data = CreateLinkData(rule.GetLinkInfoName(controlName), context.GetType(), context, rule.InfoName, null);
 
                 if (data != null)
                     linkData.Add(data);
@@ -113,13 +113,15 @@ namespace Yggdrasil
             linker.Link(control, linkData, CreateLink);
         }
 
-        private LinkData CreateLinkData(string contextInfoName, Type type, object context, string viewElementInfoName)
+        private LinkData CreateLinkData(string contextInfoName, Type type, object context, string viewElementInfoName, List<PropertyInfo> propertyPath)
         {
             MemberInfo info = type.GetMember(contextInfoName, BindingFlags.Instance | BindingFlags.Public).FirstOrDefault();
             
             // if there was already a match found then create a LinkData and return it
             if (info != null)
-                return new LinkData(viewElementInfoName, info, context);
+                return new LinkData(viewElementInfoName, info, context, propertyPath);
+
+            propertyPath = new List<PropertyInfo>();
 
             // if no match found then search within all properties of the passed context which are a class itself (except enumerables)
             foreach (PropertyInfo pInfo in type.GetProperties(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic))
@@ -143,11 +145,14 @@ namespace Yggdrasil
                     subType = pInfo.PropertyType;
                 }
 
-                LinkData data = CreateLinkData(contextInfoName, subType, subContext, viewElementInfoName);
+                LinkData data = CreateLinkData(contextInfoName, subType, subContext, viewElementInfoName, propertyPath);
 
                 // if a match found in the sub class then return the link data.
                 if (data != null)
+                {
+                    propertyPath.Add(pInfo);
                     return data;
+                }
             }
 
             return null;
