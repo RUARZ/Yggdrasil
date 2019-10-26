@@ -49,6 +49,7 @@
     <Reference Include="PresentationFramework" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Helper\BindingHandler.cs" />
     <Compile Include="Helper\PropertyChangedHandler.cs" />
     <Compile Include="Helper\VisibilityHelper.cs" />
     <Compile Include="Linker\ButtonLinker.cs" />

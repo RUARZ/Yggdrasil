@@ -99,7 +99,7 @@ namespace Yggdrasil
             
             foreach (LinkRule rule in linkRules)
             {
-                LinkData data = CreateLinkData(rule.GetLinkInfoName(controlName), context, rule.InfoName);
+                LinkData data = CreateLinkData(rule.GetLinkInfoName(controlName), context.GetType(), context, rule.InfoName);
 
                 if (data != null)
                     linkData.Add(data);
@@ -113,25 +113,37 @@ namespace Yggdrasil
             linker.Link(control, linkData, CreateLink);
         }
 
-        private LinkData CreateLinkData(string contextInfoName, object context, string viewElementInfoName)
+        private LinkData CreateLinkData(string contextInfoName, Type type, object context, string viewElementInfoName)
         {
-            if (context == null)
-                return null;
-
-            Type contextType = context.GetType();
-            MemberInfo info = contextType.GetMember(contextInfoName, BindingFlags.Instance | BindingFlags.Public).FirstOrDefault();
+            MemberInfo info = type.GetMember(contextInfoName, BindingFlags.Instance | BindingFlags.Public).FirstOrDefault();
             
             // if there was already a match found then create a LinkData and return it
             if (info != null)
                 return new LinkData(viewElementInfoName, info, context);
 
             // if no match found then search within all properties of the passed context which are a class itself (except enumerables)
-            foreach (PropertyInfo pInfo in contextType.GetProperties(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic))
+            foreach (PropertyInfo pInfo in type.GetProperties(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic))
             {
-                if (!pInfo.PropertyType.IsClass || typeof(IEnumerable).IsAssignableFrom(pInfo.PropertyType))
+                if (!pInfo.PropertyType.IsClass || pInfo.PropertyType == typeof(string))
                     continue;
 
-                LinkData data = CreateLinkData(contextInfoName, pInfo.GetValue(context), viewElementInfoName);
+                object subContext;
+                Type subType;
+
+                if (typeof(IEnumerable).IsAssignableFrom(pInfo.PropertyType))
+                {
+                    // if the type is a ienurable type then set the context to null because then the linker should be only informed
+                    // about the found members in the generic used class
+                    subContext = null;
+                    subType = pInfo.PropertyType.GetGenericArguments().First();
+                }
+                else
+                {
+                    subContext = pInfo.GetValue(context);
+                    subType = pInfo.PropertyType;
+                }
+
+                LinkData data = CreateLinkData(contextInfoName, subType, subContext, viewElementInfoName);
 
                 // if a match found in the sub class then return the link data.
                 if (data != null)
