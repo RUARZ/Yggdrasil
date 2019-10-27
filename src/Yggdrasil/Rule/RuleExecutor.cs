@@ -102,7 +102,12 @@ namespace Yggdrasil
                 LinkData data = CreateLinkData(rule.GetLinkInfoName(controlName), context.GetType(), context, rule.InfoName, null);
 
                 if (data != null)
+                {
+                    if (data.PropertyPath != null)
+                        data.PropertyPath = data.PropertyPath.Reverse();
+
                     linkData.Add(data);
+                }
             }
 
             //if no data found to link then return and don't call / add the linker

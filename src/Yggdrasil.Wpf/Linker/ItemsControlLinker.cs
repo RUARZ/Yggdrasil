@@ -26,7 +26,7 @@ namespace Yggdrasil.Wpf.Linker
             foreach (LinkData data in linkData)
             {
                 PropertyInfo pInfo = data.ContextMemberInfo as PropertyInfo;
-
+                
                 switch (data.ViewElementName)
                 {
                     case nameof(ItemsControl.ItemsSource):
@@ -38,7 +38,7 @@ namespace Yggdrasil.Wpf.Linker
 
                         _linkHelper = new ItemsControlLinkHelper(itemsControl, createLinkAction);
 
-                        BindingHandler.SetBinding(itemsControl, ItemsControl.ItemsSourceProperty, pInfo, data.Context);
+                        BindingHandler.SetBinding(itemsControl, ItemsControl.ItemsSourceProperty, pInfo, data.Context, data.PropertyPath);
                         break;
                     default:
                         throw new NotSupportedException($"The property name '{data.ViewElementName}' is not supported by '{GetType().Name}'!");

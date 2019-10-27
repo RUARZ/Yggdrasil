@@ -47,7 +47,7 @@ namespace Yggdrasil
         /// <summary>
         /// The path of <see cref="PropertyInfo"/>s until finding the final <see cref="ContextMemberInfo"/>.
         /// </summary>
-        public IEnumerable<PropertyInfo> PropertyPath { get; }
+        public IEnumerable<PropertyInfo> PropertyPath { get; internal set; }
 
         #endregion
     }
