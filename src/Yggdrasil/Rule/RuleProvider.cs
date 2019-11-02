@@ -19,6 +19,7 @@ namespace Yggdrasil
 
         #region Private Fields
 
+        private static Func<string, string[]> _nameSeparatorFunc;
         private static readonly List<TypeRule> _typeRules = new List<TypeRule>();
         private static readonly Dictionary<Type, ViewElementLinkRules> _linkRules = new Dictionary<Type, ViewElementLinkRules>();
         private static readonly Dictionary<Type, TextResourceKeyRule> _textResourceKeyRules = new Dictionary<Type, TextResourceKeyRule>();
@@ -48,6 +49,19 @@ namespace Yggdrasil
         public static void AddTypeRule(string viewModelTypeNameDefinition, string viewTypeNameDefinition)
         {
             _typeRules.Add(new TypeRule(viewModelTypeNameDefinition, viewTypeNameDefinition));
+        }
+
+        /// <summary>
+        /// Set the <see cref="Func{T, TResult}"/> to separate a control name in multiple parts to search through properties of contexts.
+        /// </summary>
+        /// <param name="separatorFunc">The <see cref="Func{T, TResult}"/> to call for separate a control name to search through explicit properties from contexts.</param>
+        /// <exception cref="AlreadyRegisteredException">Thrown if the name separator func was already set.</exception>
+        public static void SetNameSeparatorFunc(Func<string, string[]> separatorFunc)
+        {
+            if (_nameSeparatorFunc != null)
+                throw new AlreadyRegisteredException("The name separator func was already set!");
+
+            _nameSeparatorFunc = separatorFunc;
         }
 
         /// <summary>
@@ -133,6 +147,34 @@ namespace Yggdrasil
                 return _textResourceKeyRules[controlType];
 
             return _textResourceKeyRules.FirstOrDefault(x => x.Key.IsAssignableFrom(controlType)).Value;
+        }
+
+        /// <summary>
+        /// Gets the set name separator func.
+        /// </summary>
+        internal static Func<string, string[]> GetNameSeparatorFunc()
+        {
+            return _nameSeparatorFunc;
+        }
+
+        /// <summary>
+        /// Get's the context property name for the passed control <paramref name="type"/> and the <paramref name="propertyName"/> for which the context property name is searched.
+        /// </summary>
+        /// <param name="type"><see cref="Type"/> of the control.</param>
+        /// <param name="propertyName">The linked property name of the control for which a context name should be searched.</param>
+        /// <param name="controlName">The name of the control to create the context property name.</param>
+        /// <returns>The name of the context property for the passed definitions. If no definition found then <see langword="null"/> will be returned.</returns>
+        internal static string GetContextPropertyNameForTypeAndProperty(Type type, string propertyName, string controlName)
+        {
+            foreach (LinkRule rule in GetLinkRulesForType(type))
+            {
+                if (rule.InfoName != propertyName)
+                    continue;
+
+                return rule.GetLinkInfoName(controlName);
+            }
+
+            return null;
         }
 
         #endregion

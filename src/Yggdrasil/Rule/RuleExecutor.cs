@@ -32,7 +32,7 @@ namespace Yggdrasil
             if (!RuleProvider.AreLinkRulesDefined)
                 return;
 
-            EnumerateFields(view.GetType(), info => CreateLink(info.GetValue(view), context, info.Name));
+            EnumerateFields(view.GetType(), info => CreateLink(info.GetValue(view), context, info.Name, view));
         }
 
         /// <summary>
@@ -75,6 +75,11 @@ namespace Yggdrasil
 
         private void CreateLink(object control, object context, string controlName)
         {
+            CreateLink(control, context, controlName, null);
+        }
+
+        private void CreateLink(object control, object context, string controlName, object view)
+        {
             if (control == null)
                 return;
 
@@ -88,10 +93,10 @@ namespace Yggdrasil
             if (linker == null)
                 return;
 
-            Link(control, context, linkRules, linker, controlName);
+            Link(control, context, linkRules, linker, controlName, view);
         }
 
-        private void Link(object control, object context, IEnumerable<LinkRule> linkRules, ILinker linker, string controlName)
+        private void Link(object control, object context, IEnumerable<LinkRule> linkRules, ILinker linker, string controlName, object view)
         {
             Type contextType = context?.GetType();
 
@@ -99,13 +104,10 @@ namespace Yggdrasil
             
             foreach (LinkRule rule in linkRules)
             {
-                LinkData data = CreateLinkData(rule.GetLinkInfoName(controlName), context.GetType(), context, rule.InfoName, null);
+                LinkData data = CreateLinkData(controlName, rule, context.GetType(), context, rule.InfoName, null, view);
 
                 if (data != null)
                 {
-                    if (data.PropertyPath != null)
-                        data.PropertyPath = data.PropertyPath.Reverse();
-
                     linkData.Add(data);
                 }
             }
@@ -118,17 +120,71 @@ namespace Yggdrasil
             linker.Link(control, linkData, CreateLink);
         }
 
-        private LinkData CreateLinkData(string contextInfoName, Type type, object context, string viewElementInfoName, List<PropertyInfo> propertyPath)
+        private LinkData CreateLinkData(string controlName, LinkRule rule, Type type, object context, string viewElementInfoName, List<PropertyInfo> propertyPath, object view)
         {
-            MemberInfo info = type.GetMember(contextInfoName, BindingFlags.Instance | BindingFlags.Public).FirstOrDefault();
-            
-            // if there was already a match found then create a LinkData and return it
-            if (info != null)
-                return new LinkData(viewElementInfoName, info, context, propertyPath);
+            string[] nameParts = RuleProvider.GetNameSeparatorFunc().Invoke(controlName ?? string.Empty);
 
-            propertyPath = new List<PropertyInfo>();
+            if (nameParts == null || nameParts.Length == 1)
+            {
+                if (string.IsNullOrEmpty(controlName))
+                    return null;
 
-            // if no match found then search within all properties of the passed context which are a class itself (except enumerables)
+                MemberInfo info = type.GetMember(rule.GetLinkInfoName(controlName), BindingFlags.Instance | BindingFlags.Public).FirstOrDefault();
+
+                // if there was already a match found then create a LinkData and return it
+                if (info != null)
+                    return new LinkData(viewElementInfoName, info, context, propertyPath);
+
+                propertyPath = new List<PropertyInfo>();
+
+                // if no match found then search within all properties of the passed context which are a class itself (except enumerables)
+                LinkData data = CreateLinkDataForSubProperties(type, context, rule.GetLinkInfoName(controlName), viewElementInfoName, propertyPath, rule);
+
+                if (data != null)
+                    data.PropertyPath = data.PropertyPath?.Reverse();
+                return data;
+            }
+            else
+            {
+                propertyPath = new List<PropertyInfo>();
+                Type currentType = type;
+                object lastControl = null;
+                for (int i = 0; i < nameParts.Length; i++)
+                {
+                    // if the last of the name parts is reached then try to create the link data with the collected infos.
+                    if (i == nameParts.Length - 1)
+                        return CreateLinkData(nameParts[i], rule, currentType, context, viewElementInfoName, propertyPath, view);
+
+                    // if no last control is set then first try to find the control which is defined in this name part.
+                    if (lastControl == null)
+                    {
+                        EnumerateFields(view.GetType(), info =>
+                        {
+                            if (info.Name == nameParts[i])
+                                lastControl = info.GetValue(view);
+                        });
+                    }
+                    else
+                    {
+                        // get the context property name for further search based on the last control and the current name part which must define the property of the control 
+                        // to get the context property name for further search.
+                        string contextPropertyName = RuleProvider.GetContextPropertyNameForTypeAndProperty(lastControl.GetType(), nameParts[i], nameParts[i - 1]);
+                        // get the property info for the context property and add it to the property path. Just assume that the property is found. It's ok if a exception occurs
+                        // if the property could not be found because of e.g. typos.
+                        PropertyInfo pInfo = currentType.GetProperty(contextPropertyName, BindingFlags.Instance | BindingFlags.Public);
+                        propertyPath.Add(pInfo);
+                        // set the current type for the next search or link creation!
+                        currentType = pInfo.PropertyType;
+                        lastControl = null;
+                    }
+                }
+            }
+
+            return null;
+        }
+
+        private LinkData CreateLinkDataForSubProperties(Type type, object context, string contextInfoName, string viewElementInfoName, List<PropertyInfo> propertyPath, LinkRule rule)
+        {
             foreach (PropertyInfo pInfo in type.GetProperties(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic))
             {
                 if (!pInfo.PropertyType.IsClass || pInfo.PropertyType == typeof(string))
@@ -150,7 +206,7 @@ namespace Yggdrasil
                     subType = pInfo.PropertyType;
                 }
 
-                LinkData data = CreateLinkData(contextInfoName, subType, subContext, viewElementInfoName, propertyPath);
+                LinkData data = CreateLinkData(null, rule, subType, subContext, viewElementInfoName, propertyPath, null);
 
                 // if a match found in the sub class then return the link data.
                 if (data != null)
