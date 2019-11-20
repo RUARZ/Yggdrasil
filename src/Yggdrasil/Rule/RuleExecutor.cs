@@ -122,7 +122,7 @@ namespace Yggdrasil
 
         private LinkData CreateLinkData(string controlName, LinkRule rule, Type type, object context, string viewElementInfoName, List<PropertyInfo> propertyPath, object view)
         {
-            string[] nameParts = RuleProvider.GetNameSeparatorFunc().Invoke(controlName ?? string.Empty);
+            string[] nameParts = RuleProvider.GetNameSeparatorFunc()?.Invoke(controlName ?? string.Empty) ?? null;
 
             if (nameParts == null || nameParts.Length == 1)
             {
@@ -200,9 +200,14 @@ namespace Yggdrasil
                     subContext = null;
                     subType = pInfo.PropertyType.GetGenericArguments().First();
                 }
-                else
+                else if (pInfo.GetIndexParameters().Length <= 0)
                 {
                     subContext = pInfo.GetValue(context);
+                    subType = pInfo.PropertyType;
+                }
+                else
+                {
+                    subContext = null;
                     subType = pInfo.PropertyType;
                 }
 
